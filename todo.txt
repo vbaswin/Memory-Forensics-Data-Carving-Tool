@@ -1,0 +1,5 @@
+To do 
+
+[ ]option select: signature
+[ ]file object binding and reading through file
+[ ]identifying signatures and reporting in the loading page 
