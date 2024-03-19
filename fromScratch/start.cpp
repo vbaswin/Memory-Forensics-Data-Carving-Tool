@@ -21,15 +21,26 @@ void searchSignature(std::streampos start, std::streampos end, int threadNo) {
 	file.seekg(start, std::ios::beg);
 
 	for (std::streampos cur = start; file.read(buffer, n) && cur <= end; cur += n) {
-		// if ((buffer[0] == 'G' && buffer[1] == 'I' && buffer[2] == 'F' && buffer[3] == '8' &&
-		// 	 (buffer[4] == '7' || buffer[4] == '9') && buffer[5] == 'a')) {
-		// 	std::cout << "Found GIF header at offset " << file.tellg() << '\n';
+		// for (int i = 0; i < n - 1; ++i) {
+		// 	if (buffer[i] == (char)0xFF && buffer[i + 1] == (char)0xD8) {
+		// 		// calculates the correct position of the JPEG header by subtracting the number of bytes remaining in the buffer after the header from the current file position.
+		// 		std::streampos headerPos = file.tellg() - std::streamoff(n - i);
+		// 		std::cout << "Found JPEG header at offset: " << headerPos << " thread: " << threadNo << "\n";
+		// 	}
 		// }
-		for (int i = 0; i < n - 1; ++i) {
-			if (buffer[i] == (char)0xFF && buffer[i + 1] == (char)0xD8) {
-				// calculates the correct position of the JPEG header by subtracting the number of bytes remaining in the buffer after the header from the current file position.
+
+		// for (int i = 0; i < n - 7; ++i) {
+		// 	if ((buffer[i] == 'G' && buffer[i + 1] == 'I' && buffer[i + 2] == 'F' && buffer[i + 3] == '8' &&
+		// 		 (buffer[i + 4] == '7' || buffer[i + 4] == '9') && buffer[i + 5] == 'a')) {
+		// 		std::streampos headerPos = file.tellg() - std::streamoff(n - i);
+		// 		std::cout << "Found GIF header at offset " << headerPos << '\n';
+		// 	}
+		// }
+
+		for (int i = 0; i < n - 4; ++i) {
+			if (buffer[i] == '%' && buffer[i + 1] == 'P' && buffer[i + 2] == 'D' && buffer[i + 3] == 'F') {
 				std::streampos headerPos = file.tellg() - std::streamoff(n - i);
-				std::cout << "Found JPEG header at offset: " << headerPos << " thread: " << threadNo << "\n";
+				std::cout << "Found PDF header at offset " << headerPos << '\n';
 			}
 		}
 	}
