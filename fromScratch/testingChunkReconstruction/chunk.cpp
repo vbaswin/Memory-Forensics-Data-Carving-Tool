@@ -21,7 +21,7 @@ int fileNo = 1;
 void displayInHex(char str[], int sz) {
 	cout << "sz: " << sz << "\t";
 	for (int i = 0; i < sz; ++i) {
-		cout << hex << setw(2) << setfill('0') << static_cast<int>(str[i]) << " ";
+		cout << hex << setw(2) << setfill('0') << (0xFF & static_cast<int>(str[i])) << " ";
 	}
 	cout << "\n";
 	cout << dec;
@@ -62,6 +62,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 
 	int curGifFileSize = 0;
 	for (streampos cur = start; file.read(buffer, n) && cur <= end; cur += n) {
+		displayInHex(buffer, n);
 		int endPos = 0;
 		int remainingStart = 0;
 		if (startedReconstruction) {
@@ -79,6 +80,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 			}
 			for (int i = 0; i < n - 1; ++i) {
 				if (buffer[i] == (char)0x00 && buffer[i + 1] == (char)0x3B) {
+					cout << "Inside reconstuction\n";
 					startedReconstruction = 0;
 					endPos += 2;
 					remainingStart = endPos + 1;
@@ -88,7 +90,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 				++endPos;
 			}
 			if (!startedReconstruction) {
-				outfile.close();
+				// outfile.close();
 				tempFileNo = -1;
 				curGifFileSize = 0;
 			} else
@@ -158,6 +160,10 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 					break;
 				}
 				temp[++sz] = buffer[j];
+				// cout << "curr buff: ";
+				// displayInHex(buffer, 20);
+				// cout << "curr temp: ";
+				// displayInHex(temp, sz);
 				++curGifFileSize;
 			}
 			if (!startedReconstruction) {

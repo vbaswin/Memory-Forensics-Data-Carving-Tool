@@ -10,8 +10,8 @@ mutex mtx;
 
 // mutex debugFileMutex;
 
-const int maxGifSize = 4000;
-const int checkFileNo = 81;
+const int maxGifSize = 100000;
+const int checkFileNo = -20;
 
 const string outputFileName = "output";
 ofstream debugFile;
@@ -21,7 +21,7 @@ int fileNo = 1;
 void displayInHex(char str[], int sz) {
 	cout << "sz: " << sz << "\t";
 	for (int i = 0; i < sz; ++i) {
-		cout << hex << setw(2) << setfill('0') << static_cast<int>(str[i]) << " ";
+		cout << hex << setw(2) << setfill('0') << (0xFF & static_cast<int>(str[i])) << " ";
 	}
 	cout << "\n";
 	cout << dec;
@@ -88,12 +88,14 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 				++endPos;
 			}
 			if (!startedReconstruction) {
+				outfile.write(buffer, endPos);
 				outfile.close();
 				tempFileNo = -1;
 				curGifFileSize = 0;
-			} else
+			} else {
 				++endPos;
-			outfile.write(buffer, endPos);
+				outfile.write(buffer, endPos);
+			}
 			if (tempFileNo == checkFileNo) {
 				cout << "Reading till sig end or thread limit end\n";
 				displayInHex(buffer, endPos);
@@ -161,14 +163,15 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 				++curGifFileSize;
 			}
 			if (!startedReconstruction) {
+				outfile.write(temp, sz + 1);
 				outfile.close();
 				tempFileNo = -1;
 				curGifFileSize = 0;
 			} else {
 				temp[++sz] = buffer[j + 1];
+				outfile.write(temp, sz + 1);
 				++curGifFileSize;
 			}
-			outfile.write(temp, sz + 1);
 			if (tempFileNo == checkFileNo) {
 				cout << "found start startPos: " << curBufPos - 6 << " sz: " << sz + 1 << "\n";
 				displayInHex(temp, sz + 1);
@@ -210,12 +213,14 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 			++endPos;
 		}
 		if (!startedReconstruction) {
+			outfile.write(buffer, endPos);
 			outfile.close();
 			tempFileNo = -1;
 			curGifFileSize = 0;
-		} else
+		} else {
 			++endPos;
-		outfile.write(buffer, endPos);
+			outfile.write(buffer, endPos);
+		}
 		if (tempFileNo == checkFileNo) {
 			cout << "Reading beyond thread limit\n";
 			// cout.write(buffer, endPos);
