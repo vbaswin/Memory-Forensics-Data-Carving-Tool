@@ -1,0 +1,3 @@
+Type+No		Offset		Thread
+
+Gif1 		63 		5
