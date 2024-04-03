@@ -42,7 +42,7 @@ void createDirectoriesAndCleaning() {
 // size_t largest int size, no problem of overflow
 void searchSignature(streampos start, streampos end, int threadNo) {
 	int tempFileNo = -1;
-	ifstream file("../DESKTOP-AJ7FC09-20240207-184313.raw", ios::binary);
+	ifstream file("DESKTOP-AJ7FC09-20240207-184313.raw", ios::binary);
 
 	if (!file) {
 		cerr << "Thread " << threadNo << " could not open file\n";
@@ -123,17 +123,15 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 				streampos headerPos = file.tellg() - streamoff(n - i);
 
 				mtx.lock();
+
 				tempFileNo = fileNo++;
 				mtx.unlock();
 
 				debugFile << "Gif" << tempFileNo << " \t\t" << headerPos << " \t\t" << threadNo << "\n";
-				// i += 6;
-				// continue;
 				startedReconstruction = 1;
 
 				filePath = outputFileName + "/gif/" + to_string(tempFileNo) + ".gif";
 				outfile.open(filePath, ios::out | ios::binary);
-				// cout << "Current Gif fileNo: " << fileNo++ << "\n";
 
 				mtx.unlock();
 
@@ -233,7 +231,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 }
 
 int main() {
-	ifstream file("../DESKTOP-AJ7FC09-20240207-184313.raw", ios::binary);
+	ifstream file("DESKTOP-AJ7FC09-20240207-184313.raw", ios::binary);
 
 	if (!file) {
 		cerr << "Could not open file\n";
