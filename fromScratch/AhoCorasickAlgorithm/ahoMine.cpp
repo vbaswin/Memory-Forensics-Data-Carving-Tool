@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iostream>
+#include <queue>
 #include <vector>
 using namespace std;
 
@@ -42,13 +43,25 @@ public:
 };
 
 void displayTree(node *head) {
+	queue<node *> q;
 	// for (node *temp = head; temp != NULL; temp = temp->getNextNode(0))
 	// cout << temp->getValue() << " -> ";
 
-	cout << head->getNextNode(0)->getValue() << "\n";
-	cout << head->getNextNode(0)->getNextNode(0)->getValue() << "\n";
-	cout << head->getNextNode(1)->getValue() << "\n";
-	cout << head->getNextNode(1)->getNextNode(0)->getValue() << "\n";
+	// cout << head->getNextNode(0)->getValue() << "\n";
+	// cout << head->getNextNode(0)->getNextNode(0)->getValue() << "\n";
+	// cout << head->getNextNode(1)->getValue() << "\n";
+	// cout << head->getNextNode(1)->getNextNode(0)->getValue() << "\n";
+
+	q.push(head);
+	int level = 0;
+	while (!q.empty()) {
+		node *curNode = q.front();
+		cout << curNode->getValue() << " ";
+		for (int i = 0; i < curNode->getNoOfChildNodes(); ++i) {
+			q.push(curNode->getChild(i));
+		}
+		q.pop();
+	}
 }
 
 int main() {
