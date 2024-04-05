@@ -1,21 +1,32 @@
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <queue>
 #include <vector>
 using namespace std;
 
+void displayInHex(vector<char> str, int sz) {
+	cout << "sz: " << sz << "\t";
+	for (char c : str) {
+		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << " ";
+	}
+	cout << "\n";
+	cout << dec;
+}
+
 class node {
 	char val_;
 	bool endNode_;
 	bool isRoot_;
-	string pattern_;
+	vector<char> pattern_;
 	class node *failureLink_;
 	vector<class node *> nextNodes_;
 	int noOfChild_;
 	// class node *nextNodes_;
 public:
-	node(char val, bool endNode, bool isRoot, node *failureLink) : val_(val), endNode_(endNode), isRoot_(isRoot), pattern_(""), failureLink_(failureLink), noOfChild_(0) {
+	node(char val, bool endNode, bool isRoot, node *failureLink) : val_(val), endNode_(endNode), isRoot_(isRoot), failureLink_(failureLink), noOfChild_(0) {
 		nextNodes_.reserve(1);
+		pattern_.reserve(1);
 	}
 
 	bool checkRoot() {
@@ -46,28 +57,33 @@ public:
 		return noOfChild_;
 	}
 
-	void setEndNode(string str) {
+	void setEndNode(vector<char> v) {
 		endNode_ = true;
-		pattern_ = str;
+		pattern_ = v;
 	}
 
 	bool isEnd() {
 		return endNode_;
 	}
 
-	string getPattern() {
+	vector<char> getPattern() {
 		return pattern_;
 	}
 };
 
-void displayTree(node *head, bool isRootChild) {
-	if (isRootChild)
+void displayTree(node *head) {
+	// if (isRootChild)
+	// cout << "\n";
+	cout << std::hex;
+	cout << +head->getValue() << " -> ";
+	if (head->isEnd()) {
+		cout << "\nSig: ";
+		displayInHex(head->getPattern(), head->getPattern().size());
 		cout << "\n";
-	cout << head->getValue() << " -> ";
-	if (head->isEnd())
-		cout << "\nSig: " << head->getPattern() << "\n";
+	}
+	cout << std::dec;
 	for (int i = 0; i < head->getNoOfChildNodes(); ++i)
-		displayTree(head->getChild(i), head->checkRoot());
+		displayTree(head->getChild(i));
 
 	// queue<node *> q;
 	// for (node *temp = head; temp != NULL; temp = temp->getNextNode(0))
@@ -93,7 +109,24 @@ void displayTree(node *head, bool isRootChild) {
 int main() {
 	node *head = new node('R', false, true, NULL), *prevNode = NULL, *newNode = NULL, *child = NULL;
 
-	vector<string> sigs = {"ab", "abc", "ac"};
+	// vector<string> sigs = {
+	// 	"GIF87a",
+	// 	"GIF89a",
+	// 	"JPEG",
+	// 	"JPAM",
+	// 	"JPEAMMX",
+	// 	"\x00\x3B"};
+	// // "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A"};
+
+	std::vector<std::vector<char>> sigs = {
+		{'G', 'I', 'F', '8', '7', 'a'},
+		{'G', 'I', 'F', '8', '9', 'a'},
+		{'J', 'P', 'E', 'G'},
+		{'J', 'P', 'A', 'M'},
+		{'J', 'P', 'E', 'A', 'M', 'M', 'X'},
+		{'\x00', '\x3B'},
+		{'\x89', '\x50', '\x4E', '\x47', '\x0D', '\x0A', '\x1A', '\x0A'}};
+
 	for (auto &sig : sigs) {
 		prevNode = head;
 		// cout << "Sig: " << sig << "\n";
@@ -119,7 +152,7 @@ int main() {
 		prevNode->setEndNode(sig);
 	}
 
-	displayTree(head, false);
+	displayTree(head);
 
 	return 0;
 }
