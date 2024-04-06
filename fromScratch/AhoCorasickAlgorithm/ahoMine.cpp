@@ -6,6 +6,20 @@
 #include <vector>
 using namespace std;
 
+vector<unsigned char> inputVector = {
+	// Some random "garbage" values
+	0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0,
+	// GIF87a header
+	0x47, 0x49, 0x46, 0x38, 0x37, 0x61,
+	// More "garbage"
+	0x0F, 0x1E, 0x2D, 0x3C, 0x4B, 0x5A, 0x69, 0x78,
+	// GIF89a header
+	0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
+	// Even more "garbage"
+	0x87, 0x96, 0xA5, 0xB4, 0xC3, 0xD2, 0xE1, 0xF0,
+	// GIF footer
+	0x00, 0x3B};
+
 bool compareInsideCharVector(vector<unsigned char> a, vector<unsigned char> b) {
 	for (int i = 0; i < (int)min(a.size(), b.size()); ++i) {
 		if (a[i] < b[i]) {
@@ -32,8 +46,10 @@ void displayCharInHex(unsigned char c) {
 
 void displayTree(node *head) {
 	displayCharInHex(head->getValue());
-	if (head->getFailureNode() != NULL)
-		cout << " Failure: " << head->getFailureNode()->getValue();
+	if (head->getFailureNode() != NULL) {
+		cout << " Failure: ";
+		displayCharInHex(head->getFailureNode()->getValue());
+	}
 	cout << " -> ";
 	if (head->isEnd()) {
 		cout << "\nSig: ";
@@ -72,7 +88,41 @@ void trieConstruction(node **head, vector<vector<unsigned char>> &sigs) {
 				prevNode = newNode;
 			}
 		}
+		// failureNode = prevNode;
+		prevNode->setFailureNode(prevNode);
 		prevNode->setEndNode(sig);
+	}
+}
+
+void inputTraversal(node *head) {
+	// displayCharInHex(head->getValue());
+	node *curPos = head, *child = NULL;
+	for (unsigned char &val : inputVector) {
+		// cout << val;
+		displayCharInHex(val);
+		bool present = false;
+		int idx = -1;
+		for (int i = 0; i < curPos->getNoOfChildNodes(); ++i) {
+			child = curPos->getChild(i);
+			if (val == child->getValue()) {
+				present = true;
+				idx = i;
+				break;
+			}
+		}
+		if (present) {
+			cout << "Hello\n";
+			curPos = curPos->getChild(idx);
+		} else if (!present && curPos != head) {
+			cout << "\n";
+			curPos = curPos->getFailureNode();
+			// node *failure = curPos->getFailureNode();
+			// if (!failure->checkRoot() && failure->getPattern() != NULL)
+			// displayInHex(failure->getPattern());
+			// cout << "Match value: ";
+			// displayCharInHex(failure->getValue());
+			// cout << "\n";
+		}
 	}
 }
 
@@ -97,27 +147,24 @@ int main() {
 	sort(headerSigs.begin(), headerSigs.end(), compareInsideCharVector);
 	sort(footerSigs.begin(), footerSigs.end(), compareInsideCharVector);
 
-	// for (auto &val : footerSigs) {
+	// AhoCorasick aho;
+
+	// for (auto &val : aho.headerSigs) {
 	// 	displayInHex(val);
 	// }
 
 	// cout << "\n\n";
 
 	trieConstruction(&headerHead, headerSigs);
-	trieConstruction(&footerHead, footerSigs);
+	// trieConstruction(&footerHead, footerSigs);
 
 
 	// cout << "\n\n";
 
 	displayTree(headerHead);
-	displayTree(footerHead);
+	// displayTree(footerHead);
 
-	// for (int i = 0; i < head->getNoOfChildNodes(); ++i)
-	// 	displayCharInHex(head->getChild(i)->getValue());
-	// cout << "\n\n";
-
-	// for (int i = 0; i < head->getChild(0)->getNoOfChildNodes(); ++i)
-	// 	displayCharInHex(head->getChild(0)->getChild(i)->getValue());
+	inputTraversal(headerHead);
 
 	return 0;
 }
