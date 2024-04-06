@@ -54,7 +54,15 @@ public:
 		return endNode_;
 	}
 
+	void setFailureNode(node *failure) {
+		failureLink_ = failure;
+	}
+
 	vector<char> getPattern() {
 		return pattern_;
+	}
+
+	node *getFailureNode() {
+		return failureLink_;
 	}
 };

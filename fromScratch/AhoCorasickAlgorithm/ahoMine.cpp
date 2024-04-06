@@ -24,7 +24,10 @@ void displayTree(node *head) {
 	// cout << "\n";
 	cout << std::hex;
 	// cout << +head->getValue() << " -> ";
-	std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(head->getValue()) << dec << " -> ";
+	std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(head->getValue()) << dec;
+	if (head->getFailureNode() != NULL)
+		cout << " Failure: " << head->getFailureNode()->getValue();
+	cout << " -> ";
 	if (head->isEnd()) {
 		cout << "\nSig: ";
 		displayInHex(head->getPattern(), head->getPattern().size());
@@ -61,12 +64,15 @@ int main() {
 	// ====> sort first lexicologicallly or by size
 
 	std::vector<std::vector<char>> sigs = {
+		{'A', 'B', 'C', 'D'},
+		{'A', 'B', 'C', 'D', 'E'},
+		{'A', 'B'},
 		{'G', 'I', 'F', '8', '7', 'a'},
 		{'G', 'I', 'F', '8', '9', 'a'},
 		{'J', 'P', 'E', 'G'},
 		{'J', 'P', 'A', 'M'},
 		{'J', 'P', 'E', 'A', 'M', 'M', 'X'},
-		{'\x00', '\x3B'},
+		// {'\x00', '\x3B'},
 		{'\x89', '\x50', '\x4E', '\x47', '\x0D', '\x0A', '\x1A', '\x0A'}};
 
 	sort(sigs.begin(), sigs.end(), compareInsideCharVector);
@@ -78,7 +84,7 @@ int main() {
 	node *failureNode = NULL;
 	for (auto &sig : sigs) {
 		prevNode = head;
-		// failureNode = head;
+		failureNode = head;
 		// cout << "Sig: " << sig << "\n";
 		for (int i = 0; i < (int)sig.size(); ++i) {
 			int present = false;
@@ -88,6 +94,10 @@ int main() {
 				// cout << "Child value: " << child->getValue() << " Sig value: " << sig[i] << "\n";
 				if (child->getValue() == sig[i]) {
 					// cout << "present: " << sig[i] << "\n";
+					if (child->isEnd()) {
+						cout << "Hello\n";
+						failureNode = child;
+					}
 					prevNode = child;
 					present = true;
 					break;
@@ -95,6 +105,7 @@ int main() {
 			}
 			if (!present) {
 				newNode = new node(sig[i], false, false, NULL);
+				newNode->setFailureNode(failureNode);
 				prevNode->setNextNode(newNode);
 				prevNode = newNode;
 			}
