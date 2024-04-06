@@ -36,7 +36,7 @@ void displayInHex(vector<unsigned char> str) {
 	for (unsigned char c : str) {
 		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << " ";
 	}
-	cout << "\n";
+	cout << "\n\n";
 	cout << dec;
 }
 
@@ -97,13 +97,6 @@ void trieConstruction(node **head, vector<vector<unsigned char>> &sigs) {
 node *curPos = NULL;
 
 void inputTraversal(node *head, unsigned char &val, bool last) {
-	if (last && curPos != head) {
-		curPos = curPos->getFailureNode();
-		if (curPos != head)
-			displayInHex(curPos->getPattern());
-
-		curPos = head;
-	}
 	node *child = NULL;
 	bool present = false;
 	int idx = -1;
@@ -119,7 +112,14 @@ void inputTraversal(node *head, unsigned char &val, bool last) {
 	if (present) {
 		cout << "Hello\n";
 		curPos = curPos->getChild(idx);
-	} else if (!present && curPos != head) {
+
+		if (last && curPos != head) {
+			curPos = curPos->getFailureNode();
+			if (curPos != head)
+				displayInHex(curPos->getPattern());
+			curPos = head;
+		}
+	} else if ((!present || last) && curPos != head) {
 		cout << "\n";
 		curPos = curPos->getFailureNode();
 		if (curPos != head)
@@ -169,17 +169,20 @@ int main() {
 
 	curPos = headerHead;
 	for (unsigned char &val : inputVector) {
-		inputTraversal(headerHead, val, false);
+		if (val == inputVector.back())
+			inputTraversal(headerHead, val, true);
+		else
+			inputTraversal(headerHead, val, false);
 	}
-	unsigned char val = 'a';
-	inputTraversal(headerHead, val, true);
-	cout << "\n";
+	cout << "\n\n";
 
 	curPos = footerHead;
 	for (unsigned char &val : inputVector) {
-		inputTraversal(footerHead, val, false);
+		if (val == inputVector.back())
+			inputTraversal(footerHead, val, true);
+		else
+			inputTraversal(footerHead, val, false);
 	}
-	inputTraversal(footerHead, val, true);
 
 	return 0;
 }
