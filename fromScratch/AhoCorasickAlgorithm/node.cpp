@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <iostream>
 #include <vector>
 using namespace std;
@@ -12,7 +13,7 @@ class node {
 	int noOfChild_;
 	// class node *nextNodes_;
 public:
-	node(char val, bool endNode, bool isRoot, node *failureLink) : val_(val), endNode_(endNode), isRoot_(isRoot), failureLink_(failureLink), noOfChild_(0) {
+	node(unsigned char val, bool endNode, bool isRoot, node *failureLink) : val_(val), endNode_(endNode), isRoot_(isRoot), failureLink_(failureLink), noOfChild_(0) {
 		nextNodes_.reserve(1);
 		pattern_.reserve(1);
 	}
@@ -33,12 +34,9 @@ public:
 		return nextNodes_[idx];
 	}
 
-	void setNextNode(node *nextNode) {
-		nextNodes_[noOfChild_++] = nextNode;
-	}
-
 	void addChildNode(node *child) {
-		nextNodes_[noOfChild_++] = child;
+		nextNodes_.push_back(child);
+		++noOfChild_;
 	}
 
 	int getNoOfChildNodes() {

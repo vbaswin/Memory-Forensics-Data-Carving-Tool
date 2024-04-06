@@ -34,7 +34,8 @@ void displayTree(node *head) {
 	// if (isRootChild)
 	// cout << "\n";
 	// cout << +head->getValue() << " -> ";
-	std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((unsigned char)head->getValue()) << dec;
+	// std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((unsigned char)head->getValue()) << dec;
+	displayCharInHex(head->getValue());
 	if (head->getFailureNode() != NULL)
 		cout << " Failure: " << head->getFailureNode()->getValue();
 	cout << " -> ";
@@ -77,14 +78,14 @@ int main() {
 		{0x41, 0x42, 0x43, 0x44},
 		{0x41, 0x42, 0x43, 0x44, 0x45},
 		{0x41, 0x42},
-		{0x47, 0x49, 0x46, 0x38, 0x37, 0x61},
-		{0x47, 0x49, 0x46, 0x38, 0x39, 0x61},
+		// {0x47, 0x49, 0x46, 0x38, 0x37, 0x61},
+		// {0x47, 0x49, 0x46, 0x38, 0x39, 0x61},
 		{0x4A, 0x51, 0x45, 0x48},
 		{0x4A, 0x50, 0x41, 0x4D},
 		{0x4A, 0x50, 0x45, 0x41, 0x4D, 0x4D, 0x58},
 		{0x00, 0x3B},
-		{0x50, 0x89},
-		// {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+		{0x90, 0x50, 0x89},
+		{0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
 		//
 	};
 
@@ -105,17 +106,14 @@ int main() {
 		for (int i = 0; i < (int)sig.size(); ++i) {
 			int present = false;
 			int noOfChild = prevNode->getNoOfChildNodes();
+			// cout << " Start Prev Node: ";
+			// displayCharInHex(prevNode->getValue());
+			// cout << "\n";
 			for (int j = 0; j < noOfChild; ++j) {
 				child = prevNode->getChild(j);
 				// cout << "Child value: " << child->getValue() << " Sig value: " << sig[i] << "\n";
 				if (child->getValue() == sig[i]) {
-					cout << "present: ";
-					displayCharInHex(sig[i]);
-					cout << " Previous: ";
-					displayCharInHex(prevNode->getValue());
-					cout << "\n";
 					if (child->isEnd()) {
-						cout << "Hello\n";
 						failureNode = child;
 					}
 					prevNode = child;
@@ -126,20 +124,26 @@ int main() {
 			if (!present) {
 				newNode = new node(sig[i], false, false, NULL);
 				newNode->setFailureNode(failureNode);
-				prevNode->setNextNode(newNode);
+				prevNode->addChildNode(newNode);
 				prevNode = newNode;
 			}
 		}
 		prevNode->setEndNode(sig);
-		displayInHex(sig);
+		// displayInHex(sig);
+		// displayTree(head);
+		// cout << "\n\n";
 	}
 
 	cout << "\n\n";
 
 	displayTree(head);
 
+	for (int i = 0; i < head->getNoOfChildNodes(); ++i)
+		displayCharInHex(head->getChild(i)->getValue());
+	cout << "\n\n";
 
-
+	for (int i = 0; i < head->getChild(0)->getNoOfChildNodes(); ++i)
+		displayCharInHex(head->getChild(0)->getChild(i)->getValue());
 
 	return 0;
 }
