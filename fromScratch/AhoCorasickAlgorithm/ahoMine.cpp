@@ -116,6 +116,10 @@ void inputTraversal(node *head) {
 		} else if (!present && curPos != head) {
 			cout << "\n";
 			curPos = curPos->getFailureNode();
+			if (curPos != head)
+				displayInHex(curPos->getPattern());
+
+			curPos = head;
 			// node *failure = curPos->getFailureNode();
 			// if (!failure->checkRoot() && failure->getPattern() != NULL)
 			// displayInHex(failure->getPattern());
