@@ -44,35 +44,13 @@ void displayTree(node *head) {
 		displayTree(head->getChild(i));
 }
 
-int main() {
-	node *head = new node('R', false, true, NULL), *prevNode = NULL, *newNode = NULL, *child = NULL;
-
-	std::vector<std::vector<unsigned char>> sigs = {
-		{0x41, 0x42, 0x43, 0x44},
-		{0x41, 0x42, 0x43, 0x44, 0x45},
-		{0x41, 0x42},
-		{0x47, 0x49, 0x46, 0x38, 0x37, 0x61},
-		{0x47, 0x49, 0x46, 0x38, 0x39, 0x61},
-		{0x4A, 0x51, 0x45, 0x48},
-		{0x4A, 0x50, 0x41, 0x4D},
-		{0x4A, 0x50, 0x45, 0x41, 0x4D, 0x4D, 0x58},
-		{0x00, 0x3B},
-		{0x90, 0x50, 0x89},
-		{0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}};
-
-
-	sort(sigs.begin(), sigs.end(), compareInsideCharVector);
-
-	for (auto &val : sigs) {
-		displayInHex(val);
-	}
-
-	cout << "\n\n";
-
+void trieConstruction(node **head, vector<vector<unsigned char>> &sigs) {
+	*head = new node('R', false, true, NULL);
+	node *prevNode = NULL, *newNode = NULL, *child = NULL;
 	node *failureNode = NULL;
 	for (auto &sig : sigs) {
-		prevNode = head;
-		failureNode = head;
+		prevNode = *head;
+		failureNode = *head;
 		for (int i = 0; i < (int)sig.size(); ++i) {
 			int present = false;
 			int noOfChild = prevNode->getNoOfChildNodes();
@@ -96,17 +74,50 @@ int main() {
 		}
 		prevNode->setEndNode(sig);
 	}
+}
 
-	cout << "\n\n";
+int main() {
+	std::vector<std::vector<unsigned char>> headerSigs = {
+		// GIF87a
+		{0x47, 0x49, 0x46, 0x38, 0x37, 0x61},
+		// GIF89a
+		{0x47, 0x49, 0x46, 0x38, 0x39, 0x61},
+		// PNG
+		{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}};
 
-	displayTree(head);
+	std::vector<std::vector<unsigned char>> footerSigs = {
+		// GIF footer
+		{0x00, 0x3B},
+		// PNG footer
+		{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}};
 
-	for (int i = 0; i < head->getNoOfChildNodes(); ++i)
-		displayCharInHex(head->getChild(i)->getValue());
-	cout << "\n\n";
 
-	for (int i = 0; i < head->getChild(0)->getNoOfChildNodes(); ++i)
-		displayCharInHex(head->getChild(0)->getChild(i)->getValue());
+	node *headerHead = NULL, *footerHead = NULL;
+
+	sort(headerSigs.begin(), headerSigs.end(), compareInsideCharVector);
+	sort(footerSigs.begin(), footerSigs.end(), compareInsideCharVector);
+
+	// for (auto &val : footerSigs) {
+	// 	displayInHex(val);
+	// }
+
+	// cout << "\n\n";
+
+	trieConstruction(&headerHead, headerSigs);
+	trieConstruction(&footerHead, footerSigs);
+
+
+	// cout << "\n\n";
+
+	displayTree(headerHead);
+	displayTree(footerHead);
+
+	// for (int i = 0; i < head->getNoOfChildNodes(); ++i)
+	// 	displayCharInHex(head->getChild(i)->getValue());
+	// cout << "\n\n";
+
+	// for (int i = 0; i < head->getChild(0)->getNoOfChildNodes(); ++i)
+	// 	displayCharInHex(head->getChild(0)->getChild(i)->getValue());
 
 	return 0;
 }
