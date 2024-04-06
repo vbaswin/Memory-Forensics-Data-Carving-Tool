@@ -3,10 +3,10 @@
 using namespace std;
 
 class node {
-	char val_;
+	unsigned char val_;
 	bool endNode_;
 	bool isRoot_;
-	vector<char> pattern_;
+	vector<unsigned char> pattern_;
 	class node *failureLink_;
 	vector<class node *> nextNodes_;
 	int noOfChild_;
@@ -45,7 +45,7 @@ public:
 		return noOfChild_;
 	}
 
-	void setEndNode(vector<char> v) {
+	void setEndNode(vector<unsigned char> v) {
 		endNode_ = true;
 		pattern_ = v;
 	}
@@ -58,7 +58,7 @@ public:
 		failureLink_ = failure;
 	}
 
-	vector<char> getPattern() {
+	vector<unsigned char> getPattern() {
 		return pattern_;
 	}
 

@@ -6,31 +6,41 @@
 #include <vector>
 using namespace std;
 
-bool compareInsideCharVector(vector<char> a, vector<char> b) {
+bool compareInsideCharVector(vector<unsigned char> a, vector<unsigned char> b) {
+	for (int i = 0; i < (int)min(a.size(), b.size()); ++i) {
+		if (a[i] < b[i]) {
+			return true;
+		} else if (a[i] > b[i]) {
+			return false;
+		}
+	}
 	return a.size() < b.size();
 }
 
-void displayInHex(vector<char> str, int sz) {
-	cout << "sz: " << sz << "\t";
-	for (char c : str) {
+void displayInHex(vector<unsigned char> str) {
+	cout << "sz: " << str.size() << "\t";
+	for (unsigned char c : str) {
 		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << " ";
 	}
 	cout << "\n";
 	cout << dec;
 }
 
+void displayCharInHex(unsigned char c) {
+	std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << " ";
+}
+
 void displayTree(node *head) {
 	// if (isRootChild)
 	// cout << "\n";
-	cout << std::hex;
 	// cout << +head->getValue() << " -> ";
-	std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(head->getValue()) << dec;
+	std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((unsigned char)head->getValue()) << dec;
 	if (head->getFailureNode() != NULL)
 		cout << " Failure: " << head->getFailureNode()->getValue();
 	cout << " -> ";
 	if (head->isEnd()) {
 		cout << "\nSig: ";
-		displayInHex(head->getPattern(), head->getPattern().size());
+		displayInHex(head->getPattern());
 		cout << "\n";
 	}
 	for (int i = 0; i < head->getNoOfChildNodes(); ++i)
@@ -63,23 +73,29 @@ int main() {
 
 	// ====> sort first lexicologicallly or by size
 
-	std::vector<std::vector<char>> sigs = {
-		{'A', 'B', 'C', 'D'},
-		{'A', 'B', 'C', 'D', 'E'},
-		{'A', 'B'},
-		{'G', 'I', 'F', '8', '7', 'a'},
-		{'G', 'I', 'F', '8', '9', 'a'},
-		{'J', 'P', 'E', 'G'},
-		{'J', 'P', 'A', 'M'},
-		{'J', 'P', 'E', 'A', 'M', 'M', 'X'},
-		// {'\x00', '\x3B'},
-		{'\x89', '\x50', '\x4E', '\x47', '\x0D', '\x0A', '\x1A', '\x0A'}};
+	std::vector<std::vector<unsigned char>> sigs = {
+		{0x41, 0x42, 0x43, 0x44},
+		{0x41, 0x42, 0x43, 0x44, 0x45},
+		{0x41, 0x42},
+		{0x47, 0x49, 0x46, 0x38, 0x37, 0x61},
+		{0x47, 0x49, 0x46, 0x38, 0x39, 0x61},
+		{0x4A, 0x51, 0x45, 0x48},
+		{0x4A, 0x50, 0x41, 0x4D},
+		{0x4A, 0x50, 0x45, 0x41, 0x4D, 0x4D, 0x58},
+		{0x00, 0x3B},
+		{0x50, 0x89},
+		// {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+		//
+	};
+
 
 	sort(sigs.begin(), sigs.end(), compareInsideCharVector);
 
 	for (auto &val : sigs) {
-		displayInHex(val, val.size());
+		displayInHex(val);
 	}
+
+	cout << "\n\n";
 
 	node *failureNode = NULL;
 	for (auto &sig : sigs) {
@@ -93,7 +109,11 @@ int main() {
 				child = prevNode->getChild(j);
 				// cout << "Child value: " << child->getValue() << " Sig value: " << sig[i] << "\n";
 				if (child->getValue() == sig[i]) {
-					// cout << "present: " << sig[i] << "\n";
+					cout << "present: ";
+					displayCharInHex(sig[i]);
+					cout << " Previous: ";
+					displayCharInHex(prevNode->getValue());
+					cout << "\n";
 					if (child->isEnd()) {
 						cout << "Hello\n";
 						failureNode = child;
@@ -111,9 +131,15 @@ int main() {
 			}
 		}
 		prevNode->setEndNode(sig);
+		displayInHex(sig);
 	}
 
+	cout << "\n\n";
+
 	displayTree(head);
+
+
+
 
 	return 0;
 }
