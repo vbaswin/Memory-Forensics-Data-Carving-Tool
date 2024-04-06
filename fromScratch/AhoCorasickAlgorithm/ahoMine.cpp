@@ -94,39 +94,38 @@ void trieConstruction(node **head, vector<vector<unsigned char>> &sigs) {
 	}
 }
 
-void inputTraversal(node *head) {
-	// displayCharInHex(head->getValue());
-	node *curPos = head, *child = NULL;
-	for (unsigned char &val : inputVector) {
-		// cout << val;
-		displayCharInHex(val);
-		bool present = false;
-		int idx = -1;
-		for (int i = 0; i < curPos->getNoOfChildNodes(); ++i) {
-			child = curPos->getChild(i);
-			if (val == child->getValue()) {
-				present = true;
-				idx = i;
-				break;
-			}
-		}
-		if (present) {
-			cout << "Hello\n";
-			curPos = curPos->getChild(idx);
-		} else if (!present && curPos != head) {
-			cout << "\n";
-			curPos = curPos->getFailureNode();
-			if (curPos != head)
-				displayInHex(curPos->getPattern());
+node *curPos = NULL;
 
-			curPos = head;
-			// node *failure = curPos->getFailureNode();
-			// if (!failure->checkRoot() && failure->getPattern() != NULL)
-			// displayInHex(failure->getPattern());
-			// cout << "Match value: ";
-			// displayCharInHex(failure->getValue());
-			// cout << "\n";
+void inputTraversal(node *head, unsigned char &val, bool last) {
+	if (last && curPos != head) {
+		curPos = curPos->getFailureNode();
+		if (curPos != head)
+			displayInHex(curPos->getPattern());
+
+		curPos = head;
+	}
+	node *child = NULL;
+	bool present = false;
+	int idx = -1;
+	displayCharInHex(val);
+	for (int i = 0; i < curPos->getNoOfChildNodes(); ++i) {
+		child = curPos->getChild(i);
+		if (val == child->getValue()) {
+			present = true;
+			idx = i;
+			break;
 		}
+	}
+	if (present) {
+		cout << "Hello\n";
+		curPos = curPos->getChild(idx);
+	} else if (!present && curPos != head) {
+		cout << "\n";
+		curPos = curPos->getFailureNode();
+		if (curPos != head)
+			displayInHex(curPos->getPattern());
+
+		curPos = head;
 	}
 }
 
@@ -160,15 +159,27 @@ int main() {
 	// cout << "\n\n";
 
 	trieConstruction(&headerHead, headerSigs);
-	// trieConstruction(&footerHead, footerSigs);
+	trieConstruction(&footerHead, footerSigs);
 
 
 	// cout << "\n\n";
 
 	displayTree(headerHead);
-	// displayTree(footerHead);
+	displayTree(footerHead);
 
-	inputTraversal(headerHead);
+	curPos = headerHead;
+	for (unsigned char &val : inputVector) {
+		inputTraversal(headerHead, val, false);
+	}
+	unsigned char val = 'a';
+	inputTraversal(headerHead, val, true);
+	cout << "\n";
+
+	curPos = footerHead;
+	for (unsigned char &val : inputVector) {
+		inputTraversal(footerHead, val, false);
+	}
+	inputTraversal(footerHead, val, true);
 
 	return 0;
 }
