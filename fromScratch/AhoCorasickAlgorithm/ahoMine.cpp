@@ -6,6 +6,10 @@
 #include <vector>
 using namespace std;
 
+bool compareInsideCharVector(vector<char> a, vector<char> b) {
+	return a.size() < b.size();
+}
+
 void displayInHex(vector<char> str, int sz) {
 	cout << "sz: " << sz << "\t";
 	for (char c : str) {
@@ -19,13 +23,13 @@ void displayTree(node *head) {
 	// if (isRootChild)
 	// cout << "\n";
 	cout << std::hex;
-	cout << +head->getValue() << " -> ";
+	// cout << +head->getValue() << " -> ";
+	std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(head->getValue()) << dec << " -> ";
 	if (head->isEnd()) {
 		cout << "\nSig: ";
 		displayInHex(head->getPattern(), head->getPattern().size());
 		cout << "\n";
 	}
-	cout << std::dec;
 	for (int i = 0; i < head->getNoOfChildNodes(); ++i)
 		displayTree(head->getChild(i));
 
@@ -53,14 +57,8 @@ void displayTree(node *head) {
 int main() {
 	node *head = new node('R', false, true, NULL), *prevNode = NULL, *newNode = NULL, *child = NULL;
 
-	// vector<string> sigs = {
-	// 	"GIF87a",
-	// 	"GIF89a",
-	// 	"JPEG",
-	// 	"JPAM",
-	// 	"JPEAMMX",
-	// 	"\x00\x3B"};
-	// // "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A"};
+
+	// ====> sort first lexicologicallly or by size
 
 	std::vector<std::vector<char>> sigs = {
 		{'G', 'I', 'F', '8', '7', 'a'},
@@ -70,6 +68,12 @@ int main() {
 		{'J', 'P', 'E', 'A', 'M', 'M', 'X'},
 		{'\x00', '\x3B'},
 		{'\x89', '\x50', '\x4E', '\x47', '\x0D', '\x0A', '\x1A', '\x0A'}};
+
+	sort(sigs.begin(), sigs.end(), compareInsideCharVector);
+
+	for (auto &val : sigs) {
+		displayInHex(val, val.size());
+	}
 
 	node *failureNode = NULL;
 	for (auto &sig : sigs) {
