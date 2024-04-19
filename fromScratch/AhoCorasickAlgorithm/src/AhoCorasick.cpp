@@ -4,8 +4,9 @@ using namespace std;
 
 class AhoCorasick {
 public:
-	Node *curPos_ = NULL;
 	Node *head_ = NULL;
+	Node *curPos_ = NULL;
+	bool last_ = false;
 	vector<vector<unsigned char>> sigs_;
 
 	AhoCorasick(vector<vector<unsigned char>> sigs) : sigs_(sigs) {
@@ -37,6 +38,8 @@ public:
 	}
 
 	void displayTree(Node *head) {
+		if (head == NULL)
+			return;
 		displayCharInHex(head->getValue());
 		if (head->getFailureNode() != NULL) {
 			cout << " Failure: ";
@@ -52,13 +55,18 @@ public:
 			displayTree(head->getChild(i));
 	}
 
-	void trieConstruction(Node **head, vector<vector<unsigned char>> &sigs) {
-		*head = new Node('R', false, true, NULL);
+	void displayTreeParentFn() {
+		displayTree(head_);
+	}
+
+	void trieConstruction() {
+		head_ = new Node('R', false, true, NULL);
+		curPos_ = head_;
 		Node *prevNode = NULL, *newNode = NULL, *child = NULL;
 		Node *failureNode = NULL;
-		for (auto &sig : sigs) {
-			prevNode = *head;
-			failureNode = *head;
+		for (auto &sig : sigs_) {
+			prevNode = head_;
+			failureNode = head_;
 			for (int i = 0; i < (int)sig.size(); ++i) {
 				int present = false;
 				int noOfChild = prevNode->getNoOfChildNodes();
@@ -80,53 +88,43 @@ public:
 					prevNode = newNode;
 				}
 			}
-			// failureNode = prevNode;
 			prevNode->setFailureNode(prevNode);
 			prevNode->setEndNode(sig);
 		}
 	}
 
-	void inputTraversal(Node *head, unsigned char &val, bool last) {
+	void inputTraversal(unsigned char &val) {
 		Node *child = NULL;
 		bool present = false;
 		int idx = -1;
 		displayCharInHex(val);
-		// cout << ": Children\n";
 		for (int i = 0; i < curPos_->getNoOfChildNodes(); ++i) {
 			child = curPos_->getChild(i);
-			// displayCharInHex(val);
-			// cout << " ";
-			// displayCharInHex(child->getValue());
-			// cout << "\n";
 			if (val == child->getValue()) {
-				// cout << "\ninside";
 				present = true;
 				idx = i;
 				break;
 			}
 		}
-		// cout << "\n";
 		if (present) {
 			curPos_ = curPos_->getChild(idx);
-			// cout << "\nfirst: ";
-			// displayCharInHex(val);
-			// cout << "\n";
-			if (last) {
+			if (last_) {
 				curPos_ = curPos_->getFailureNode();
-				if (curPos_ != head)
+				if (curPos_ != head_)
 					displayInHex(curPos_->getPattern());
-				curPos_ = head;
+				curPos_ = head_;
 				cout << "\n";
 			}
-		} else if ((!present || last) && curPos_ != head) {
-			// cout << "\nSecond: ";
-			// displayCharInHex(val);
-			// cout << "\n";
+		} else if ((!present || last_) && curPos_ != head_) {
 			curPos_ = curPos_->getFailureNode();
-			if (curPos_ != head)
+			if (curPos_ != head_)
 				displayInHex(curPos_->getPattern());
-			curPos_ = head;
-			inputTraversal(head, val, last);
+			curPos_ = head_;
+			inputTraversal(val);
 		}
+	}
+
+	void setlastTrue() {
+		last_ = true;
 	}
 };

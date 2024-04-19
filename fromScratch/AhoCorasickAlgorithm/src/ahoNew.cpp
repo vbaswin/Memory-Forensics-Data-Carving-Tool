@@ -48,30 +48,28 @@ int main() {
 		{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}};
 
 
-	Node *headerHead = NULL, *footerHead = NULL;
-
-	// sort(headerSigs.begin(), headerSigs.end(), compareInsideCharVector);
-	// sort(footerSigs.begin(), footerSigs.end(), compareInsideCharVector);
-
-
 	AhoCorasick AhoHeader(headerSigs), AhoFooter(footerSigs);
 
-	AhoHeader.trieConstruction(&headerHead, headerSigs);
-	AhoFooter.trieConstruction(&footerHead, footerSigs);
+	AhoHeader.trieConstruction();
+	AhoFooter.trieConstruction();
 
 
-	// AhoHeader.displayTree(headerHead);
-	// AhoFooter.displayTree(footerHead);
+	// AhoHeader.displayTreeParentFn();
+	// AhoFooter.displayTreeParentFn();
 
-	AhoHeader.curPos_ = headerHead;
-	AhoFooter.curPos_ = footerHead;
-	for (unsigned char &val : inputVector) {
-		if (val == inputVector.back()) {
-			AhoHeader.inputTraversal(headerHead, val, true);
-			AhoFooter.inputTraversal(footerHead, val, true);
+	// AhoHeader.curPos_ = headerHead;
+	// AhoFooter.curPos_ = footerHead;
+	int n = inputVector.size();
+	for (int i = 0; i < n; ++i) {
+		unsigned char &val = inputVector[i];
+		if (i == (n - 1)) {
+			AhoHeader.setlastTrue();
+			AhoFooter.setlastTrue();
+			AhoHeader.inputTraversal(val);
+			AhoFooter.inputTraversal(val);
 		} else {
-			AhoHeader.inputTraversal(headerHead, val, false);
-			AhoFooter.inputTraversal(footerHead, val, false);
+			AhoHeader.inputTraversal(val);
+			AhoFooter.inputTraversal(val);
 		}
 	}
 	// cout << "\n\n";
