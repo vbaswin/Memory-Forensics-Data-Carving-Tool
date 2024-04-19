@@ -26,7 +26,8 @@ public:
 		return nextNodes_[idx];
 	}
 
-	char getValue() {
+	// I returned unsigned int here ;)))
+	unsigned char getValue() {
 		return val_;
 	}
 

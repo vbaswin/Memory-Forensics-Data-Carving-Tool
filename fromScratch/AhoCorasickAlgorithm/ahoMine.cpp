@@ -11,8 +11,10 @@ vector<unsigned char> inputVector = {
 	0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0,
 	// GIF87a header
 	0x47, 0x49, 0x46, 0x38, 0x37, 0x61,
+	0x47, 0x49, 0x46, 0x38, 0x37, 0x61,
 	// More "garbage"
 	0x0F, 0x1E, 0x2D, 0x3C, 0x4B, 0x5A, 0x69, 0x78,
+	0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
 	// GIF89a header
 	0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
 	// Even more "garbage"
@@ -32,7 +34,7 @@ bool compareInsideCharVector(vector<unsigned char> a, vector<unsigned char> b) {
 }
 
 void displayInHex(vector<unsigned char> str) {
-	cout << "sz: " << str.size() << "\t";
+	cout << "\nsz: " << str.size() << "\t";
 	for (unsigned char c : str) {
 		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << " ";
 	}
@@ -101,31 +103,42 @@ void inputTraversal(node *head, unsigned char &val, bool last) {
 	bool present = false;
 	int idx = -1;
 	displayCharInHex(val);
+	// cout << ": Children\n";
 	for (int i = 0; i < curPos->getNoOfChildNodes(); ++i) {
 		child = curPos->getChild(i);
+		// displayCharInHex(val);
+		// cout << " ";
+		// displayCharInHex(child->getValue());
+		// cout << "\n";
 		if (val == child->getValue()) {
+			// cout << "\ninside";
 			present = true;
 			idx = i;
 			break;
 		}
 	}
+	// cout << "\n";
 	if (present) {
-		cout << "Hello\n";
 		curPos = curPos->getChild(idx);
-
-		if (last && curPos != head) {
+		// cout << "\nfirst: ";
+		// displayCharInHex(val);
+		// cout << "\n";
+		if (last) {
 			curPos = curPos->getFailureNode();
 			if (curPos != head)
 				displayInHex(curPos->getPattern());
 			curPos = head;
+			cout << "\n";
 		}
 	} else if ((!present || last) && curPos != head) {
-		cout << "\n";
+		// cout << "\nSecond: ";
+		// displayCharInHex(val);
+		// cout << "\n";
 		curPos = curPos->getFailureNode();
 		if (curPos != head)
 			displayInHex(curPos->getPattern());
-
 		curPos = head;
+		inputTraversal(head, val, last);
 	}
 }
 
@@ -164,8 +177,8 @@ int main() {
 
 	// cout << "\n\n";
 
-	displayTree(headerHead);
-	displayTree(footerHead);
+	// displayTree(headerHead);
+	// displayTree(footerHead);
 
 	curPos = headerHead;
 	for (unsigned char &val : inputVector) {
