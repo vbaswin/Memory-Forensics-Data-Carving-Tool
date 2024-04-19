@@ -3,17 +3,17 @@
 #include <vector>
 using namespace std;
 
-class node {
+class Node {
 	unsigned char val_;
 	bool endNode_;
 	bool isRoot_;
 	vector<unsigned char> pattern_;
-	class node *failureLink_;
-	vector<class node *> nextNodes_;
+	class Node *failureLink_;
+	vector<class Node *> nextNodes_;
 	int noOfChild_;
-	// class node *nextNodes_;
+	// class Node *nextNodes_;
 public:
-	node(unsigned char val, bool endNode, bool isRoot, node *failureLink) : val_(val), endNode_(endNode), isRoot_(isRoot), failureLink_(failureLink), noOfChild_(0) {
+	Node(unsigned char val, bool endNode, bool isRoot, Node *failureLink) : val_(val), endNode_(endNode), isRoot_(isRoot), failureLink_(failureLink), noOfChild_(0) {
 		nextNodes_.reserve(1);
 		pattern_.reserve(1);
 	}
@@ -22,7 +22,7 @@ public:
 		return isRoot_;
 	}
 
-	node *getNextNode(int idx) {
+	Node *getNextNode(int idx) {
 		return nextNodes_[idx];
 	}
 
@@ -31,11 +31,11 @@ public:
 		return val_;
 	}
 
-	node *getChild(int idx) {
+	Node *getChild(int idx) {
 		return nextNodes_[idx];
 	}
 
-	void addChildNode(node *child) {
+	void addChildNode(Node *child) {
 		nextNodes_.push_back(child);
 		++noOfChild_;
 	}
@@ -53,7 +53,7 @@ public:
 		return endNode_;
 	}
 
-	void setFailureNode(node *failure) {
+	void setFailureNode(Node *failure) {
 		failureLink_ = failure;
 	}
 
@@ -61,7 +61,7 @@ public:
 		return pattern_;
 	}
 
-	node *getFailureNode() {
+	Node *getFailureNode() {
 		return failureLink_;
 	}
 };

@@ -1,9 +1,6 @@
-#include "node.cpp"
-#include <algorithm>
-#include <iomanip>
-#include <iostream>
-#include <queue>
-#include <vector>
+#include "Node.cpp"
+// #include "allClasses.h"
+#include "basic.h"
 using namespace std;
 
 vector<unsigned char> inputVector = {
@@ -17,6 +14,7 @@ vector<unsigned char> inputVector = {
 	0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
 	// GIF89a header
 	0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
+	0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
 	// Even more "garbage"
 	0x87, 0x96, 0xA5, 0xB4, 0xC3, 0xD2, 0xE1, 0xF0,
 	// GIF footer
@@ -46,7 +44,7 @@ void displayCharInHex(unsigned char c) {
 	std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << " ";
 }
 
-void displayTree(node *head) {
+void displayTree(Node *head) {
 	displayCharInHex(head->getValue());
 	if (head->getFailureNode() != NULL) {
 		cout << " Failure: ";
@@ -62,10 +60,10 @@ void displayTree(node *head) {
 		displayTree(head->getChild(i));
 }
 
-void trieConstruction(node **head, vector<vector<unsigned char>> &sigs) {
-	*head = new node('R', false, true, NULL);
-	node *prevNode = NULL, *newNode = NULL, *child = NULL;
-	node *failureNode = NULL;
+void trieConstruction(Node **head, vector<vector<unsigned char>> &sigs) {
+	*head = new Node('R', false, true, NULL);
+	Node *prevNode = NULL, *newNode = NULL, *child = NULL;
+	Node *failureNode = NULL;
 	for (auto &sig : sigs) {
 		prevNode = *head;
 		failureNode = *head;
@@ -84,7 +82,7 @@ void trieConstruction(node **head, vector<vector<unsigned char>> &sigs) {
 				}
 			}
 			if (!present) {
-				newNode = new node(sig[i], false, false, NULL);
+				newNode = new Node(sig[i], false, false, NULL);
 				newNode->setFailureNode(failureNode);
 				prevNode->addChildNode(newNode);
 				prevNode = newNode;
@@ -96,10 +94,10 @@ void trieConstruction(node **head, vector<vector<unsigned char>> &sigs) {
 	}
 }
 
-node *curPos = NULL;
+Node *curPos = NULL;
 
-void inputTraversal(node *head, unsigned char &val, bool last) {
-	node *child = NULL;
+void inputTraversal(Node *head, unsigned char &val, bool last) {
+	Node *child = NULL;
 	bool present = false;
 	int idx = -1;
 	displayCharInHex(val);
@@ -158,7 +156,7 @@ int main() {
 		{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}};
 
 
-	node *headerHead = NULL, *footerHead = NULL;
+	Node *headerHead = NULL, *footerHead = NULL;
 
 	sort(headerSigs.begin(), headerSigs.end(), compareInsideCharVector);
 	sort(footerSigs.begin(), footerSigs.end(), compareInsideCharVector);
