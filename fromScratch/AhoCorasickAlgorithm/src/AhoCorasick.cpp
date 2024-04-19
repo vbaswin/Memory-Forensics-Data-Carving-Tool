@@ -8,9 +8,11 @@ public:
 	Node *head_ = NULL;
 	vector<vector<unsigned char>> sigs_;
 
-	// AhoCorasick(vector<vector<unsigned char>> sigs): sigs_(sigs) {}
+	AhoCorasick(vector<vector<unsigned char>> sigs) : sigs_(sigs) {
+		sort(sigs_.begin(), sigs_.end(), compareInsideCharVector);
+	}
 
-	bool compareInsideCharVector(vector<unsigned char> a, vector<unsigned char> b) {
+	static bool compareInsideCharVector(vector<unsigned char> a, vector<unsigned char> b) {
 		for (int i = 0; i < (int)min(a.size(), b.size()); ++i) {
 			if (a[i] < b[i]) {
 				return true;

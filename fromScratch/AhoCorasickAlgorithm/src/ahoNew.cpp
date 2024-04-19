@@ -8,6 +8,7 @@ vector<unsigned char> inputVector = {
 	0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0,
 	// GIF87a header
 	0x47, 0x49, 0x46, 0x38, 0x37, 0x61,
+	0x00, 0x3b,
 	0x47, 0x49, 0x46, 0x38, 0x37, 0x61,
 	// More "garbage"
 	0x0F, 0x1E, 0x2D, 0x3C, 0x4B, 0x5A, 0x69, 0x78,
@@ -49,35 +50,38 @@ int main() {
 
 	Node *headerHead = NULL, *footerHead = NULL;
 
-	sort(headerSigs.begin(), headerSigs.end(), compareInsideCharVector);
-	sort(footerSigs.begin(), footerSigs.end(), compareInsideCharVector);
+	// sort(headerSigs.begin(), headerSigs.end(), compareInsideCharVector);
+	// sort(footerSigs.begin(), footerSigs.end(), compareInsideCharVector);
 
 
-	AhoCorasick AhoHeader, AhoFooter;
+	AhoCorasick AhoHeader(headerSigs), AhoFooter(footerSigs);
 
 	AhoHeader.trieConstruction(&headerHead, headerSigs);
 	AhoFooter.trieConstruction(&footerHead, footerSigs);
 
 
-	AhoHeader.displayTree(headerHead);
-	AhoFooter.displayTree(footerHead);
+	// AhoHeader.displayTree(headerHead);
+	// AhoFooter.displayTree(footerHead);
 
 	AhoHeader.curPos_ = headerHead;
-	for (unsigned char &val : inputVector) {
-		if (val == inputVector.back())
-			AhoHeader.inputTraversal(headerHead, val, true);
-		else
-			AhoHeader.inputTraversal(headerHead, val, false);
-	}
-	cout << "\n\n";
-
 	AhoFooter.curPos_ = footerHead;
 	for (unsigned char &val : inputVector) {
-		if (val == inputVector.back())
+		if (val == inputVector.back()) {
+			AhoHeader.inputTraversal(headerHead, val, true);
 			AhoFooter.inputTraversal(footerHead, val, true);
-		else
+		} else {
+			AhoHeader.inputTraversal(headerHead, val, false);
 			AhoFooter.inputTraversal(footerHead, val, false);
+		}
 	}
+	// cout << "\n\n";
+
+	// for (unsigned char &val : inputVector) {
+	// 	if (val == inputVector.back())
+	// 		AhoFooter.inputTraversal(footerHead, val, true);
+	// 	else
+	// 		AhoFooter.inputTraversal(footerHead, val, false);
+	// }
 
 	return 0;
 }
