@@ -1,5 +1,6 @@
 #include "../inc/Node.h"
 #include "../inc/basic.h"
+#include "../inc/vectorHash.h"
 using namespace std;
 
 class AhoCorasick {
@@ -9,7 +10,9 @@ public:
 	bool last_ = false;
 	vector<vector<unsigned char>> sigs_;
 
-	AhoCorasick(vector<vector<unsigned char>> sigs) : sigs_(sigs) {
+	unordered_map<vector<unsigned char>, string, VectorHash> compMap_;
+
+	AhoCorasick(vector<vector<unsigned char>> sigs, unordered_map<vector<unsigned char>, string, VectorHash> compMap) : sigs_(sigs), compMap_(compMap) {
 		sort(sigs_.begin(), sigs_.end(), compareInsideCharVector);
 	}
 
@@ -29,7 +32,7 @@ public:
 		for (unsigned char c : str) {
 			std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << " ";
 		}
-		cout << "\n\n";
+		cout << "\n";
 		cout << dec;
 	}
 
@@ -110,15 +113,19 @@ public:
 			curPos_ = curPos_->getChild(idx);
 			if (last_) {
 				curPos_ = curPos_->getFailureNode();
-				if (curPos_ != head_)
+				if (curPos_ != head_) {
 					displayInHex(curPos_->getPattern());
+					cout << compMap_[curPos_->getPattern()] << "\n";
+				}
 				curPos_ = head_;
 				cout << "\n";
 			}
 		} else if ((!present || last_) && curPos_ != head_) {
 			curPos_ = curPos_->getFailureNode();
-			if (curPos_ != head_)
+			if (curPos_ != head_) {
 				displayInHex(curPos_->getPattern());
+				cout << compMap_[curPos_->getPattern()] << "\n";
+			}
 			curPos_ = head_;
 			inputTraversal(val);
 		}

@@ -1,6 +1,7 @@
 #include "../inc/AhoCorasick.h"
 #include "../inc/Node.h"
 #include "../inc/basic.h"
+#include "../inc/vectorHash.h"
 using namespace std;
 
 vector<unsigned char> inputVector = {
@@ -47,8 +48,22 @@ int main() {
 		// PNG footer
 		{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}};
 
+	unordered_map<vector<unsigned char>, string, VectorHash> headerComp = {
+		// GIF87a
+		{{0x47, 0x49, 0x46, 0x38, 0x37, 0x61}, "GIF Header"},
+		// GIF89a
+		{{0x47, 0x49, 0x46, 0x38, 0x39, 0x61}, "GIF Header"},
+		// PNG
+		{{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}, "PNG Header"}};
 
-	AhoCorasick AhoHeader(headerSigs), AhoFooter(footerSigs);
+
+	unordered_map<vector<unsigned char>, string, VectorHash> footerComp = {
+		// GIF footer
+		{{0x00, 0x3B}, "GIF Footer"},
+		// PNG footer
+		{{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}, "PNG Footer"}};
+
+	AhoCorasick AhoHeader(headerSigs, headerComp), AhoFooter(footerSigs, footerComp);
 
 	AhoHeader.trieConstruction();
 	AhoFooter.trieConstruction();
