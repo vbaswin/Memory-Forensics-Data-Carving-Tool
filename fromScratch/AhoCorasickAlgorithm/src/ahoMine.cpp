@@ -1,6 +1,6 @@
 #include "Node.cpp"
 // #include "allClasses.h"
-#include "basic.h"
+#include "../inc/basic.h"
 using namespace std;
 
 vector<unsigned char> inputVector = {

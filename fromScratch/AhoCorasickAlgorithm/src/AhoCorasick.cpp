@@ -1,5 +1,5 @@
-#include "Node.h"
-#include "basic.h"
+#include "../inc/Node.h"
+#include "../inc/basic.h"
 using namespace std;
 
 class AhoCorasick {

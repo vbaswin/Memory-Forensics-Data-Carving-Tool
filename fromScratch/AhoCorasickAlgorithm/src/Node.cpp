@@ -1,6 +1,4 @@
-#include <iomanip>
-#include <iostream>
-#include <vector>
+#include "../inc/basic.h"
 using namespace std;
 
 class Node {

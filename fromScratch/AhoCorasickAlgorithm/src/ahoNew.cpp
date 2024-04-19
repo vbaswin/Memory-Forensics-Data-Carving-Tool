@@ -1,6 +1,6 @@
-#include "AhoCorasick.h"
-#include "Node.h"
-#include "basic.h"
+#include "../inc/AhoCorasick.h"
+#include "../inc/Node.h"
+#include "../inc/basic.h"
 using namespace std;
 
 vector<unsigned char> inputVector = {
