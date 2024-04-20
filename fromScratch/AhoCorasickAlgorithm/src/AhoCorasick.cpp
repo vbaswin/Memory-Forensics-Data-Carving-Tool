@@ -7,13 +7,23 @@ class AhoCorasick {
 public:
 	Node *head_ = NULL;
 	Node *curPos_ = NULL;
+	Node *foundPattern_ = NULL;
 	bool last_ = false;
 	vector<vector<unsigned char>> sigs_;
 
-	unordered_map<vector<unsigned char>, string, VectorHash> compMap_;
+	// unordered_map<vector<unsigned char>, pair<string, vector<unsigned char>>, VectorHash> compMap_;
 
-	AhoCorasick(vector<vector<unsigned char>> sigs, unordered_map<vector<unsigned char>, string, VectorHash> compMap) : sigs_(sigs), compMap_(compMap) {
+	// AhoCorasick(vector<vector<unsigned char>> sigs, unordered_map<vector<unsigned char>, pair<string, vector<unsigned char>>, VectorHash> compMap) : sigs_(sigs), compMap_(compMap) {
+	AhoCorasick(vector<vector<unsigned char>> sigs) : sigs_(sigs) {
 		sort(sigs_.begin(), sigs_.end(), compareInsideCharVector);
+	}
+
+	AhoCorasick(const AhoCorasick &other) {
+		head_ = other.head_;
+		curPos_ = other.curPos_;
+		foundPattern_ = other.foundPattern_;
+		last_ = other.last_;
+		sigs_ = other.sigs_;
 	}
 
 	static bool compareInsideCharVector(vector<unsigned char> a, vector<unsigned char> b) {
@@ -96,11 +106,12 @@ public:
 		}
 	}
 
-	void inputTraversal(unsigned char &val) {
+	bool inputTraversal(unsigned char &val) {
 		Node *child = NULL;
 		bool present = false;
 		int idx = -1;
-		displayCharInHex(val);
+		bool returnVal = false;
+		// displayCharInHex(val);
 		for (int i = 0; i < curPos_->getNoOfChildNodes(); ++i) {
 			child = curPos_->getChild(i);
 			if (val == child->getValue()) {
@@ -114,21 +125,26 @@ public:
 			if (last_) {
 				curPos_ = curPos_->getFailureNode();
 				if (curPos_ != head_) {
-					displayInHex(curPos_->getPattern());
-					cout << compMap_[curPos_->getPattern()] << "\n";
+					// displayInHex(curPos_->getPattern());
+					// compMap_[curPos_->getPattern()];
+					foundPattern_ = curPos_;
+					returnVal = true;
 				}
 				curPos_ = head_;
-				cout << "\n";
+				// cout << "\n";
 			}
 		} else if ((!present || last_) && curPos_ != head_) {
 			curPos_ = curPos_->getFailureNode();
 			if (curPos_ != head_) {
-				displayInHex(curPos_->getPattern());
-				cout << compMap_[curPos_->getPattern()] << "\n";
+				// displayInHex(curPos_->getPattern());
+				// cout << compMap_[curPos_->getPattern()];
+				foundPattern_ = curPos_;
+				returnVal = true;
 			}
 			curPos_ = head_;
 			inputTraversal(val);
 		}
+		return returnVal;
 	}
 
 	void setlastTrue() {
