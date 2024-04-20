@@ -75,4 +75,4 @@ CMakeLists.txt.user*
 *.raw
 
 fromScratch/output/
-fromScratch/AhoCorasickAlgorithm/output
+fromScratch/AhoCorasickAlgorithm/output/
