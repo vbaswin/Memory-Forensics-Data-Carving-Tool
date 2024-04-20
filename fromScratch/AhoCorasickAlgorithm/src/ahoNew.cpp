@@ -14,6 +14,7 @@ mutex debugFileMtx, outputFileMtx;
 
 std::atomic<int> gifFileNo(1);
 std::atomic<int> pngFileNo(1);
+std::atomic<int> jpegFileNo(1);
 
 const string outputFileName = "../output";
 
@@ -27,10 +28,12 @@ void createDirectoriesAndCleaning() {
 
 	string gifSubFolder = "gif";
 	string pngSubFolder = "png";
+	string jpegSubFolder = "jpeg";
 
 	// Create the directories if they do not exist
 	filesystem::create_directories(parentFolder + "/" + gifSubFolder);
 	filesystem::create_directories(parentFolder + "/" + pngSubFolder);
+	filesystem::create_directories(parentFolder + "/" + jpegSubFolder);
 }
 
 std::vector<std::vector<unsigned char>> headerSigs = {
@@ -39,13 +42,21 @@ std::vector<std::vector<unsigned char>> headerSigs = {
 	// GIF89a
 	{0x47, 0x49, 0x46, 0x38, 0x39, 0x61},
 	// PNG
-	{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}};
+	{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A},
+	// JPEG
+	{0xFF, 0xD8}
+	//
+};
 
 std::vector<std::vector<unsigned char>> footerSigs = {
 	// GIF footer
 	{0x00, 0x3B},
 	// PNG footer
-	{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}};
+	{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82},
+	// JPEG
+	{0xFF, 0xD9}
+	//
+};
 
 unordered_map<vector<unsigned char>, pair<string, vector<unsigned char>>, VectorHash> headerComp = {
 	// GIF87a
@@ -53,13 +64,23 @@ unordered_map<vector<unsigned char>, pair<string, vector<unsigned char>>, Vector
 	// GIF89a
 	{{0x47, 0x49, 0x46, 0x38, 0x39, 0x61}, {"GIF Header", {0x00, 0x3B}}},
 	// PNG
-	{{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}, {"PNG Header", {0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}}}};
+	{{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}, {"PNG Header", {0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}}},
+
+	// JPEG
+	{{0xFF, 0xD8}, {"JPEG Header", {0xFF, 0xD9}}}
+	//
+};
 
 unordered_map<vector<unsigned char>, string, VectorHash> footerComp = {
 	// GIF footer
 	{{0x00, 0x3B}, "GIF Footer"},
 	// PNG footer
-	{{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}, "PNG Footer"}};
+	{{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}, "PNG Footer"},
+
+	// JPEG
+	{{0xFF, 0xD9}, "JPEG Footer"}
+	//
+};
 
 
 AhoCorasick AhoHeaderFirst(headerSigs), AhoFooterFirst(footerSigs);
@@ -128,6 +149,10 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 					tempFileNo = pngFileNo++;
 					fileType = "png";
 					fileExtension = ".png";
+				} else if (headerStr == "JPEG Header") {
+					tempFileNo = jpegFileNo++;
+					fileType = "jpeg";
+					fileExtension = ".jpeg";
 				}
 				// if (fileStartCarving)
 				footerSig = headerComp[pattern].second;
