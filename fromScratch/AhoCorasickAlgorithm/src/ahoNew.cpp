@@ -86,7 +86,9 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 	ofstream outfile;
 
 	bool fileStartCarving = false;
+	vector<unsigned char> footerSig;
 	for (streampos cur = start; file.read(reinterpret_cast<char *>(buffer), n) && cur <= end; cur += n) {
+		vector<unsigned char> temp;
 		for (int i = 0; i < n; ++i) {
 			unsigned char &val = buffer[i];
 			// cout << val << " ";
@@ -97,12 +99,22 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 			// 	AhoFooter.inputTraversal(val);
 			// } else {
 			if (AhoHeader.inputTraversal(val)) {
+				if (fileStartCarving) {
+					if (temp.size() != 0) {
+						outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+						temp.clear();
+					}
+					outfile.write(reinterpret_cast<char *>(&footerSig[0]), footerSig.size());
+					outfile.close();
+				} else
+					fileStartCarving = true;
 				// for (const auto &c : AhoHeader.curPos_->getPattern())
 				// debugFile << c << " ";
 				streampos headerPos = file.tellg() - streamoff(n - i);
 
 				debugFileMtx.lock();
-				string headerStr = headerComp[AhoHeader.foundPattern_->getPattern()].first;
+				vector<unsigned char> pattern = AhoHeader.foundPattern_->getPattern();
+				string headerStr = headerComp[pattern].first;
 				debugFile << headerStr << " ";
 				debugFile << " at " << headerPos << " thread: " << threadNo << "\n";
 				debugFileMtx.unlock();
@@ -118,29 +130,44 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 					fileExtension = ".png";
 				}
 				// if (fileStartCarving)
-				fileStartCarving = true;
+				footerSig = headerComp[pattern].second;
 
 				filePath = outputFileName + "/" + fileType + "/" + to_string(tempFileNo) + fileExtension;
 				outfile.open(filePath, ios::out | ios::binary);
-				if (!outfile)
-					cout << "Failed to open file: " << filePath << std::endl;
+				// if (!outfile)
+				// cout << "Failed to open file: " << filePath << std::endl;
 				// closing more important
-				outfile.close();
-			}
-			// if (fileStartCarving) {
-			// 	if (AhoFooter.inputTraversal(val)) {
-			// 		// for (const auto &c : AhoHeader.curPos_->getPattern())
-			// 		// debugFile << c << " ";
-			// 		streampos headerPos = file.tellg() - streamoff(n - i);
+				// outfile.close();
 
-			// 		debugFileMtx.lock();
-			// 		debugFile << footerComp[AhoFooter.foundPattern_->getPattern()] << " ";
-			// 		debugFile << " at " << headerPos << " thread: " << threadNo << "\n";
-			// 		debugFileMtx.unlock();
-			// 	}
-			// }
+				outfile.write(reinterpret_cast<char *>(&pattern[0]), pattern.size());
+			}
+			if (fileStartCarving) {
+				temp.push_back(val);
+				if (AhoFooter.inputTraversal(val)) {
+					// for (const auto &c : AhoHeader.curPos_->getPattern())
+					// debugFile << c << " ";
+					streampos headerPos = file.tellg() - streamoff(n - i);
+					vector<unsigned char> footerPatternFound = AhoFooter.foundPattern_->getPattern();
+					debugFileMtx.lock();
+					debugFile << footerComp[footerPatternFound] << " ";
+					debugFile << " at " << headerPos << " thread: " << threadNo << "\n";
+					debugFileMtx.unlock();
+
+					if (footerPatternFound == footerSig) {
+						outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+
+						outfile.close();
+						temp.clear();
+						fileStartCarving = false;
+					}
+				}
+			}
 			// AhoFooter.inputTraversal(val);
-			// }
+		}
+
+		if (temp.size() != 0) {
+			outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+			temp.clear();
 		}
 	}
 }
