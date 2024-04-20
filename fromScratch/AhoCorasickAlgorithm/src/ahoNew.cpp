@@ -2,30 +2,36 @@
 #include "../inc/Node.h"
 #include "../inc/basic.h"
 #include "../inc/vectorHash.h"
+#include <atomic>
+#include <filesystem>
 #include <fstream>
 #include <mutex>
 #include <thread>
 using namespace std;
 
-mutex debugFileMtx;
+mutex debugFileMtx, outputFileMtx;
+// gifFileMtx, pngFileMtx;
 
-vector<unsigned char> inputVector = {
-	// Some random "garbage" values
-	0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0,
-	// GIF87a header
-	0x47, 0x49, 0x46, 0x38, 0x37, 0x61,
-	0x00, 0x3b,
-	0x47, 0x49, 0x46, 0x38, 0x37, 0x61,
-	// More "garbage"
-	0x0F, 0x1E, 0x2D, 0x3C, 0x4B, 0x5A, 0x69, 0x78,
-	0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
-	// GIF89a header
-	0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
-	0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-	// Even more "garbage"
-	0x87, 0x96, 0xA5, 0xB4, 0xC3, 0xD2, 0xE1, 0xF0,
-	// GIF footer
-	0x00, 0x3B};
+std::atomic<int> gifFileNo(1);
+std::atomic<int> pngFileNo(1);
+
+const string outputFileName = "../output";
+
+// int gifFileNo = 1;
+// int pngFileNo = 1;
+
+void createDirectoriesAndCleaning() {
+	string parentFolder = "../output";
+
+	filesystem::remove_all(parentFolder);
+
+	string gifSubFolder = "gif";
+	string pngSubFolder = "png";
+
+	// Create the directories if they do not exist
+	filesystem::create_directories(parentFolder + "/" + gifSubFolder);
+	filesystem::create_directories(parentFolder + "/" + pngSubFolder);
+}
 
 std::vector<std::vector<unsigned char>> headerSigs = {
 	// GIF87a
@@ -61,6 +67,7 @@ AhoCorasick AhoHeaderFirst(headerSigs), AhoFooterFirst(footerSigs);
 ofstream debugFile;
 
 void searchSignature(streampos start, streampos end, int threadNo) {
+	int tempFileNo = -1;
 	AhoCorasick AhoHeader(AhoHeaderFirst), AhoFooter(AhoFooterFirst);
 
 	ifstream file("DESKTOP-AJ7FC09-20240207-184313.raw", ios::binary);
@@ -75,6 +82,10 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 	int n = 20;
 	unsigned char buffer[n];
 
+	string filePath, fileType, fileExtension;
+	ofstream outfile;
+
+	bool fileStartCarving = false;
 	for (streampos cur = start; file.read(reinterpret_cast<char *>(buffer), n) && cur <= end; cur += n) {
 		for (int i = 0; i < n; ++i) {
 			unsigned char &val = buffer[i];
@@ -91,10 +102,43 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 				streampos headerPos = file.tellg() - streamoff(n - i);
 
 				debugFileMtx.lock();
-				debugFile << headerComp[AhoHeader.foundPattern_->getPattern()].first << " ";
+				string headerStr = headerComp[AhoHeader.foundPattern_->getPattern()].first;
+				debugFile << headerStr << " ";
 				debugFile << " at " << headerPos << " thread: " << threadNo << "\n";
 				debugFileMtx.unlock();
+
+
+				if (headerStr == "GIF Header") {
+					tempFileNo = gifFileNo++;
+					fileType = "gif";
+					fileExtension = ".gif";
+				} else if (headerStr == "PNG Header") {
+					tempFileNo = pngFileNo++;
+					fileType = "png";
+					fileExtension = ".png";
+				}
+				// if (fileStartCarving)
+				fileStartCarving = true;
+
+				filePath = outputFileName + "/" + fileType + "/" + to_string(tempFileNo) + fileExtension;
+				outfile.open(filePath, ios::out | ios::binary);
+				if (!outfile)
+					cout << "Failed to open file: " << filePath << std::endl;
+				// closing more important
+				outfile.close();
 			}
+			// if (fileStartCarving) {
+			// 	if (AhoFooter.inputTraversal(val)) {
+			// 		// for (const auto &c : AhoHeader.curPos_->getPattern())
+			// 		// debugFile << c << " ";
+			// 		streampos headerPos = file.tellg() - streamoff(n - i);
+
+			// 		debugFileMtx.lock();
+			// 		debugFile << footerComp[AhoFooter.foundPattern_->getPattern()] << " ";
+			// 		debugFile << " at " << headerPos << " thread: " << threadNo << "\n";
+			// 		debugFileMtx.unlock();
+			// 	}
+			// }
 			// AhoFooter.inputTraversal(val);
 			// }
 		}
@@ -107,6 +151,8 @@ int main() {
 
 	// AhoHeader.displayTreeParentFn();
 	// AhoFooter.displayTreeParentFn();
+
+	createDirectoriesAndCleaning();
 
 
 	ifstream file("DESKTOP-AJ7FC09-20240207-184313.raw", ios::binary);
@@ -176,3 +222,21 @@ int main() {
 
 	return 0;
 }
+
+vector<unsigned char> inputVector = {
+	// Some random "garbage" values
+	0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0,
+	// GIF87a header
+	0x47, 0x49, 0x46, 0x38, 0x37, 0x61,
+	0x00, 0x3b,
+	0x47, 0x49, 0x46, 0x38, 0x37, 0x61,
+	// More "garbage"
+	0x0F, 0x1E, 0x2D, 0x3C, 0x4B, 0x5A, 0x69, 0x78,
+	0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+	// GIF89a header
+	0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
+	0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+	// Even more "garbage"
+	0x87, 0x96, 0xA5, 0xB4, 0xC3, 0xD2, 0xE1, 0xF0,
+	// GIF footer
+	0x00, 0x3B};
