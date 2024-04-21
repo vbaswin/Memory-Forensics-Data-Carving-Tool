@@ -30,7 +30,7 @@ public slots:
 	void chooseFileButtonClicked();
 	void chooseOutputFolderButtonClicked();
 	void displayNoOfFiles();
-	// void searchSignatureFirst();
+	void searchSignatureFirst();
 	// int searchSignature(string, string, string);
 };
 #endif	  // MAINWINDOW_H

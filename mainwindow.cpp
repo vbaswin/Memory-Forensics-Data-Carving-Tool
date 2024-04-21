@@ -366,6 +366,10 @@ void MainWindow::goToLoadingPage() {
 
 }
 
+void MainWindow::searchSignatureFirst() {
+	cerr << "Inside search signature first\n";
+}
+
 void MainWindow::goBackToMainPage() {
 	ui->stackedWidget->setCurrentWidget(ui->MainPage);
 }
@@ -422,6 +426,7 @@ void MainWindow::chooseOutputFolderButtonClicked() {
 }
 
 void MainWindow::displayNoOfFiles() {
+	ui->progressBar->setValue(100);
 
 	QString displayFileNoData = QString("No of Files\n"
 										"------------------------------------------------\n"
