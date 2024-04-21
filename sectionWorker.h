@@ -22,7 +22,7 @@ public slots:
 
 signals:
 	void finished();
-	void progressMade(int value);
+	// void progressMade(int value);
 
 private:
 	streampos start;

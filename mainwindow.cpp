@@ -359,7 +359,7 @@ void MainWindow::searchMainFun() {
 
 		sectionWorker->moveToThread(thread);
 		connect(thread, &QThread::started, sectionWorker, &sectionWorker::doWork);
-		connect(sectionWorker, &sectionWorker::finished, prevWindowPtr, &MainWindow::updateProgressBar);
+		connect(sectionWorker, &sectionWorker::finished, prevWindowPtr , &MainWindow::updateProgressBar);
 		connect(sectionWorker, &sectionWorker::finished, thread, &QThread::quit);
 		connect(sectionWorker, &sectionWorker::finished, sectionWorker, &sectionWorker::deleteLater);
 		connect(thread, &QThread::finished, thread, &QThread::deleteLater);
@@ -368,10 +368,13 @@ void MainWindow::searchMainFun() {
 		threads.append(thread);
 	}
 
-	for (QThread* thread : threads) {
-		thread->wait();
-	}
-	cerr << "Out of this function\n";
+	// cerr << threads.size() << "\n";
+	// int threadNumber = 1;
+	// for (QThread* thread : threads) {
+		// thread->wait();
+		// cerr << threadNumber++ << " completed\n";
+	// }
+	// cerr << "Out of this function\n";
 
 }
 
@@ -417,6 +420,17 @@ void MainWindow::goToLoadingPage() {
 	connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
 	thread->start();
+
+	mutex.lock();
+	QString displayFileNoData = QString("No of Files Carved\n"
+										"------------------\n"
+										"GIF: %1\n"
+										"PNG: %2")
+									.arg(gifFileNo - 1)
+									.arg(pngFileNo - 1);
+
+	ui->outputDiplayTextBrowser->setText(displayFileNoData);
+	mutex.unlock();
 	// thread->wait();
 }
 
@@ -480,10 +494,10 @@ void MainWindow::chooseOutputFolderButtonClicked() {
 }
 
 void MainWindow::displayCompletedMsg() {
-	ui->progressBar->setValue(100);
+	// ui->progressBar->setValue(100);
 
-	ui->outputDiplayTextBrowser->append("\nCompleted\n");
-	cerr << "Hello\n";
+	// ui->outputDiplayTextBrowser->append("\nCompleted\n");
+	// cerr << "Hello\n";
 }
 
 // int MainWindow::searchSignature(string fileContent, string signature, string fileType) {
