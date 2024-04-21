@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QMutex>
 #include <fstream>
 using namespace std;
 
@@ -22,6 +23,7 @@ private:
 	Ui::MainWindow *ui;
 	ifstream inputFile;
 	string inputFileContent;
+	QMutex mutex;
 	// ofstream hexFile
 public slots:
 	void goToLoadingPage();
@@ -29,8 +31,11 @@ public slots:
 	void categorySelect();
 	void chooseFileButtonClicked();
 	void chooseOutputFolderButtonClicked();
-	void displayNoOfFiles();
+	// void displayNoOfFiles();
 	void searchSignatureFirst();
+	void searchMainFun();
+	void updateProgressBar();
+	void displayCompletedMsg();
 	// int searchSignature(string, string, string);
 };
 #endif	  // MAINWINDOW_H

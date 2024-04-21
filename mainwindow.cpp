@@ -19,8 +19,10 @@
 #include "basic.h"
 #include "AhoCorasick.h"
 #include "Node.h"
+#include <QMutex>
 #include "vectorHash.h"
 #include "worker.h"
+#include "sectionWorker.h"
 using namespace std;
 
 void searchMainFun();
@@ -294,7 +296,9 @@ MainWindow::~MainWindow() {
 	delete ui;
 }
 
-void searchMainFun() {
+MainWindow *prevWindowPtr;
+
+void MainWindow::searchMainFun() {
 
 	AhoHeaderFirst.trieConstruction();
 	AhoFooterFirst.trieConstruction();
@@ -325,21 +329,68 @@ void searchMainFun() {
 			  // int threadNo = 20;
 			  // searchSignature(0, fileSize, threadNo);
 
-	streampos splitSize = 100000000;	// 100 MB
+	// streampos splitSize = 100000000;	// 100 MB
 
-	vector<std::thread> threads;
+	// vector<std::thread> threads;
+
+	// int threadNo = 0;
+	// streampos i = 0;
+	// for (streampos i = 0; i < fileSize; i += splitSize) {
+	// 	streampos end = min(i + splitSize, fileSize);
+	// 	threads.push_back(std::thread(searchSignature, i, end, threadNo++));
+	// }
+
+	// for (auto &t : threads) {
+	// 	t.join();
+	// }
+
+	QList<QThread*> threads;
+
+	streampos splitSize = 100000000;	// 100 MB
+	// QProgressBar progressBar;
+	prevWindowPtr->ui->progressBar->setRange(0, fileSize / splitSize);
 
 	int threadNo = 0;
-	streampos i = 0;
 	for (streampos i = 0; i < fileSize; i += splitSize) {
-		streampos end = min(i + splitSize, fileSize);
-		threads.push_back(std::thread(searchSignature, i, end, threadNo++));
+		streampos end = std::min(i + splitSize, fileSize);
+
+		QThread* thread = new QThread;
+		sectionWorker* sectionWorker = new class sectionWorker(i, end, threadNo++);
+
+		sectionWorker->moveToThread(thread);
+		connect(thread, &QThread::started, sectionWorker, &sectionWorker::doWork);
+		connect(sectionWorker, &sectionWorker::finished, prevWindowPtr, &MainWindow::updateProgressBar);
+		connect(sectionWorker, &sectionWorker::finished, thread, &QThread::quit);
+		connect(sectionWorker, &sectionWorker::finished, sectionWorker, &sectionWorker::deleteLater);
+		connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+
+		thread->start();
+		threads.append(thread);
 	}
 
-	for (auto &t : threads) {
-		t.join();
+	for (QThread* thread : threads) {
+		thread->wait();
 	}
+	cerr << "Out of this function\n";
 
+}
+
+void MainWindow::updateProgressBar() {
+	// cerr << "Iside update proress bar\n";
+	mutex.lock();
+	ui->progressBar->setValue(ui->progressBar->value() + 1);
+
+	QString displayFileNoData = QString("No of Files Carved\n"
+										"------------------\n"
+										"GIF: %1\n"
+										"PNG: %2")
+									.arg(gifFileNo - 1)
+									.arg(pngFileNo - 1);
+
+
+	ui->outputDiplayTextBrowser->setText(displayFileNoData);
+
+	mutex.unlock();
 }
 
 void MainWindow::goToLoadingPage() {
@@ -352,18 +403,21 @@ void MainWindow::goToLoadingPage() {
 	// string fileType = ui->categorySpecificSignatureComboBox->currentText().toStdString();
 	ui->outputDiplayTextBrowser->clear();
 
+	prevWindowPtr = this;
+
 	QThread* thread = new QThread;
-	Worker* worker = new Worker;
+	MainWindow* mainWindow = new MainWindow;
+	Worker* worker = new Worker(mainWindow);
 
 	worker->moveToThread(thread);
 	connect(thread, &QThread::started, worker, &Worker::doWork);
-	connect(worker, &Worker::finished, this, &MainWindow::displayNoOfFiles);
+	connect(worker, &Worker::finished, this, &MainWindow::displayCompletedMsg);
 	connect(worker, &Worker::finished, thread, &QThread::quit);
 	connect(worker, &Worker::finished, worker, &Worker::deleteLater);
 	connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
 	thread->start();
-
+	// thread->wait();
 }
 
 void MainWindow::searchSignatureFirst() {
@@ -379,12 +433,12 @@ void MainWindow::categorySelect() {
 	// qInfo() << categoryString << "\n";
 	// qInfo() << ui->selectCategoryComboBox->currentIndex();
 
-	QMap<QString, QStringList> CategoryDB = {
-		{ "Image", { "JPG","PNG", "GIF"} },
-		{ "Video", { "MP4", "MKV" }},
-		{ "Audio",  { "MP3" }},
-		{ "Doc",{ "PDF"}}
-	};
+	// QMap<QString, QStringList> CategoryDB = {
+	// 	{ "Image", { "JPG","PNG", "GIF"} },
+	// 	{ "Video", { "MP4", "MKV" }},
+	// 	{ "Audio",  { "MP3" }},
+	// 	{ "Doc",{ "PDF"}}
+	// };
 
 	// ui->categorySpecificSignatureComboBox->clear();
 	// ui->categorySpecificSignatureComboBox->addItem("All");
@@ -409,7 +463,7 @@ void MainWindow::chooseFileButtonClicked() {
 	// string currentDir = QDir::currentPath().toStdString();
 	// string hexTextFilePath = currentDir + "/output_hex.txt";
 
-	cerr << inputFilePath << "\n";
+	// cerr << inputFilePath << "\n";
 	ui->inputFilePathShow->setText(QString::fromStdString(inputFilePath));
 }
 
@@ -421,22 +475,15 @@ void MainWindow::chooseOutputFolderButtonClicked() {
 
 	outputFolderPath.append("/output");
 
-	cerr << outputFolderPath << "\n";
+	// cerr << outputFolderPath << "\n";
 	ui->outputFolderPathShow->setText(QString::fromStdString(outputFolderPath));
 }
 
-void MainWindow::displayNoOfFiles() {
+void MainWindow::displayCompletedMsg() {
 	ui->progressBar->setValue(100);
 
-	QString displayFileNoData = QString("No of Files\n"
-										"------------------------------------------------\n"
-										"GIF: %1\n"
-										"PNG: %2")
-									.arg(gifFileNo - 1)
-									.arg(pngFileNo - 1);
-
-
-	ui->outputDiplayTextBrowser->setText(displayFileNoData);
+	ui->outputDiplayTextBrowser->append("\nCompleted\n");
+	cerr << "Hello\n";
 }
 
 // int MainWindow::searchSignature(string fileContent, string signature, string fileType) {
