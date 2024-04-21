@@ -23,11 +23,14 @@ private:
 	ifstream inputFile;
 	string inputFileContent;
 	// ofstream hexFile
-private slots:
+public slots:
 	void goToLoadingPage();
 	void goBackToMainPage();
 	void categorySelect();
 	void chooseFileButtonClicked();
-	int searchSignature(string, string, string);
+	void chooseOutputFolderButtonClicked();
+	void displayNoOfFiles();
+	// void searchSignatureFirst();
+	// int searchSignature(string, string, string);
 };
 #endif	  // MAINWINDOW_H

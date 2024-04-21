@@ -47,93 +47,56 @@
          <string>Analyse</string>
         </property>
        </widget>
-       <widget class="QComboBox" name="selectCategoryComboBox">
-        <property name="geometry">
-         <rect>
-          <x>500</x>
-          <y>180</y>
-          <width>79</width>
-          <height>24</height>
-         </rect>
-        </property>
-        <item>
-         <property name="text">
-          <string>All</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Image</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Audio</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Video</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Doc</string>
-         </property>
-        </item>
-       </widget>
-       <widget class="QComboBox" name="categorySpecificSignatureComboBox">
-        <property name="geometry">
-         <rect>
-          <x>500</x>
-          <y>270</y>
-          <width>79</width>
-          <height>24</height>
-         </rect>
-        </property>
-        <item>
-         <property name="text">
-          <string>All</string>
-         </property>
-        </item>
-       </widget>
-       <widget class="QLabel" name="selectCategoryLabel">
-        <property name="geometry">
-         <rect>
-          <x>380</x>
-          <y>180</y>
-          <width>101</width>
-          <height>16</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Select Category</string>
-        </property>
-       </widget>
-       <widget class="QLabel" name="categorySpecificSignatureLabel">
-        <property name="geometry">
-         <rect>
-          <x>310</x>
-          <y>270</y>
-          <width>171</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Category specific signature</string>
-        </property>
-       </widget>
        <widget class="QPushButton" name="chooseFile">
         <property name="geometry">
          <rect>
           <x>80</x>
-          <y>180</y>
-          <width>80</width>
+          <y>190</y>
+          <width>181</width>
           <height>24</height>
          </rect>
         </property>
         <property name="text">
-         <string>Choose File</string>
+         <string>Choose Input File</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="chooseOutputFolder">
+        <property name="geometry">
+         <rect>
+          <x>80</x>
+          <y>280</y>
+          <width>181</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Choose Output Folder </string>
+        </property>
+       </widget>
+       <widget class="QLineEdit" name="inputFilePathShow">
+        <property name="geometry">
+         <rect>
+          <x>300</x>
+          <y>190</y>
+          <width>441</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+       <widget class="QLineEdit" name="outputFolderPathShow">
+        <property name="geometry">
+         <rect>
+          <x>300</x>
+          <y>280</y>
+          <width>441</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
         </property>
        </widget>
       </widget>
