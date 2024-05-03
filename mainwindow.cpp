@@ -94,20 +94,20 @@ std::vector<std::vector<unsigned char>> footerSigs = {
 	//
 };
 
-unordered_map<vector<unsigned char>, pair<string, vector<unsigned char>>, VectorHash> headerComp = {
+unordered_map<vector<unsigned char>, pair<int, vector<unsigned char>>, VectorHash> headerComp = {
 	// GIF87a
-	{{0x47, 0x49, 0x46, 0x38, 0x37, 0x61}, {"GIF Header", {0x00, 0x3B}}},
+	{{0x47, 0x49, 0x46, 0x38, 0x37, 0x61}, {1, {0x00, 0x3B}}},
 	// GIF89a
-	{{0x47, 0x49, 0x46, 0x38, 0x39, 0x61}, {"GIF Header", {0x00, 0x3B}}},
+	{{0x47, 0x49, 0x46, 0x38, 0x39, 0x61}, {1, {0x00, 0x3B}}},
 	// PNG
-	{{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}, {"PNG Header", {0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}}},
+	{{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}, {2, {0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}}},
 
 	// JPEG
-	{{0xFF, 0xD8}, {"JPEG Header", {0xFF, 0xD9}}},
+	{{0xFF, 0xD8}, {3, {0xFF, 0xD9}}},
 	// PDF
-	{{0x25, 0x50, 0x44, 0x46}, {"PDF Header", {0x25, 0x25, 0x45, 0x4F, 0x46}}},
+	{{0x25, 0x50, 0x44, 0x46}, {4, {0x25, 0x25, 0x45, 0x4F, 0x46}}},
 	// ZIP
-	{{0x50, 0x4B, 0x03, 0x04}, {"ZIP Header", {0x50, 0x4B, 0x05, 0x06}}}
+	{{0x50, 0x4B, 0x03, 0x04}, {5, {0x50, 0x4B, 0x05, 0x06}}}
 	//
 };
 
@@ -144,7 +144,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 
 	file.seekg(start, ios::beg);
 
-	int n = 100;
+	int n = 100000;
 	unsigned char buffer[n];
 
 	string filePath, fileType, fileExtension;
@@ -181,7 +181,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 				streampos headerPos = file.tellg() - streamoff(n - i);
 
 				vector<unsigned char> pattern = AhoHeader.foundPattern_->getPattern();
-				string headerStr = headerComp[pattern].first;
+				int headerIdx = headerComp[pattern].first;
 				curFileSize += pattern.size();
 				// debugFileMtx.lock();
 				// debugFile << headerStr << " ";
@@ -189,24 +189,24 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 				// debugFileMtx.unlock();
 
 
-				if (headerStr == "GIF Header") {
+				if (headerIdx == 1) {
 					tempFileNo = gifFileNo++;
 					fileType = "gif";
 					fileExtension = ".gif";
-				} else if (headerStr == "PNG Header") {
+				} else if (headerIdx == 2) {
 					tempFileNo = pngFileNo++;
 					fileType = "png";
 					fileExtension = ".png";
 				}
-				else if (headerStr == "JPEG Header") {
+				else if (headerIdx == 3) {
 					tempFileNo = jpegFileNo++;
 					fileType = "jpeg";
 					fileExtension = ".jpeg";
-				} else if (headerStr == "PDF Header") {
+				} else if (headerIdx == 4) {
 					tempFileNo = pdfFileNo++;
 					fileType = "pdf";
 					fileExtension = ".pdf";
-				} else if (headerStr == "ZIP Header") {
+				} else if (headerIdx == 5) {
 					tempFileNo = zipFileNo++;
 					fileType = "zip";
 					fileExtension = ".zip";
@@ -257,7 +257,8 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 	}
 
 	temp.clear();
-	while (fileStartCarving) {
+	streampos curPos = file.tellg();
+	while (curPos < end && fileStartCarving) {
 		if (file.read(reinterpret_cast<char *>(buffer), n)) {
 			for (int i = 0; i < n; ++i) {
 				unsigned char &val = buffer[i];
@@ -342,7 +343,7 @@ void MainWindow::searchMainFun() {
 
 	QList<QThread*> threads;
 
-	streampos splitSize = 50000000;
+	streampos splitSize = 100000000;
 	noOfThreads = fileSize / splitSize;
 	prevWindowPtr->ui->progressBar->setRange(0, noOfThreads);
 
