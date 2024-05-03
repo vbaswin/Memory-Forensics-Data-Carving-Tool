@@ -20,21 +20,25 @@
 #include "AhoCorasick.h"
 #include "Node.h"
 #include <QMutex>
+#include <Qtimer>
 #include "vectorHash.h"
 #include "worker.h"
 #include "sectionWorker.h"
 using namespace std;
 
 void searchMainFun();
+const int MAX_SIZE = 500000000;
+int noOfThreads = 1;
+int curThreadNo = 0;
 
 mutex debugFileMtx, outputFileMtx;
 // gifFileMtx, pngFileMtx;
 
 std::atomic<int> gifFileNo(1);
 std::atomic<int> pngFileNo(1);
-// std::atomic<int> jpegFileNo(1);
-// std::atomic<int> pdfFileNo(1);
-// std::atomic<int> zipFileNo(1);
+std::atomic<int> jpegFileNo(1);
+std::atomic<int> pdfFileNo(1);
+std::atomic<int> zipFileNo(1);
 
 string outputFolderPath = "";
 
@@ -51,10 +55,12 @@ string zipSubFolder = "zip";
 		  // Create the directories if they do not exist
 filesystem::create_directories(outputFolderPath + "/" + gifSubFolder);
 filesystem::create_directories(outputFolderPath + "/" + pngSubFolder);
-// filesystem::create_directories(outputFolderPath + "/" + jpegSubFolder);
-// filesystem::create_directories(outputFolderPath + "/" + pdfSubFolder);
-// filesystem::create_directories(outputFolderPath + "/" + zipSubFolder);
+filesystem::create_directories(outputFolderPath + "/" + jpegSubFolder);
+filesystem::create_directories(outputFolderPath + "/" + pdfSubFolder);
+filesystem::create_directories(outputFolderPath + "/" + zipSubFolder);
 }
+
+
 
 std::vector<std::vector<unsigned char>> headerSigs = {
 	// GIF87a
@@ -64,12 +70,12 @@ std::vector<std::vector<unsigned char>> headerSigs = {
 	// PNG
 	{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A},
 	// JPEG
-	// {0xFF, 0xD8},
+	{0xFF, 0xD8},
 	// PDF
-	// {0x25, 0x50, 0x44, 0x46},
+	{0x25, 0x50, 0x44, 0x46},
 
 	// ZIP
-	// {0x50, 0x4B, 0x03, 0x04}
+	{0x50, 0x4B, 0x03, 0x04}
 	//
 };
 
@@ -79,11 +85,11 @@ std::vector<std::vector<unsigned char>> footerSigs = {
 	// PNG footer
 	{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82},
 	// JPEG
-	// {0xFF, 0xD9},
+	{0xFF, 0xD9},
 	// PDF
-	// {0x25, 0x25, 0x45, 0x4F, 0x46},
+	{0x25, 0x25, 0x45, 0x4F, 0x46},
 	// ZIP
-	// {0x50, 0x4B, 0x05, 0x06},
+	{0x50, 0x4B, 0x05, 0x06},
 
 	//
 };
@@ -97,11 +103,11 @@ unordered_map<vector<unsigned char>, pair<string, vector<unsigned char>>, Vector
 	{{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}, {"PNG Header", {0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}}},
 
 	// JPEG
-	// {{0xFF, 0xD8}, {"JPEG Header", {0xFF, 0xD9}}},
+	{{0xFF, 0xD8}, {"JPEG Header", {0xFF, 0xD9}}},
 	// PDF
-	// {{0x25, 0x50, 0x44, 0x46}, {"PDF Header", {0x25, 0x25, 0x45, 0x4F, 0x46}}},
+	{{0x25, 0x50, 0x44, 0x46}, {"PDF Header", {0x25, 0x25, 0x45, 0x4F, 0x46}}},
 	// ZIP
-	// {{0x50, 0x4B, 0x03, 0x04}, {"ZIP Header", {0x50, 0x4B, 0x05, 0x06}}}
+	{{0x50, 0x4B, 0x03, 0x04}, {"ZIP Header", {0x50, 0x4B, 0x05, 0x06}}}
 	//
 };
 
@@ -112,17 +118,17 @@ unordered_map<vector<unsigned char>, string, VectorHash> footerComp = {
 	{{0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82}, "PNG Footer"},
 
 	// JPEG
-	// {{0xFF, 0xD9}, "JPEG Footer"},
-	//
-	// {{0x25, 0x25, 0x45, 0x4F, 0x46}, "PDF Footer"},
+	{{0xFF, 0xD9}, "JPEG Footer"},
+	// PDF
+	{{0x25, 0x25, 0x45, 0x4F, 0x46}, "PDF Footer"},
 	// ZIP
-	// {{0x50, 0x4B, 0x05, 0x06}, "ZIP Footer"}
+	{{0x50, 0x4B, 0x05, 0x06}, "ZIP Footer"}
 
 };
 
 AhoCorasick AhoHeaderFirst(headerSigs), AhoFooterFirst(footerSigs);
 
-ofstream debugFile;
+// ofstream debugFile;
 string inputFilePath = "";
 
 void searchSignature(streampos start, streampos end, int threadNo) {
@@ -138,11 +144,13 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 
 	file.seekg(start, ios::beg);
 
-	int n = 20;
+	int n = 100;
 	unsigned char buffer[n];
 
 	string filePath, fileType, fileExtension;
 	ofstream outfile;
+
+	size_t curFileSize = 0;
 
 	bool fileStartCarving = false;
 	vector<unsigned char> footerSig, temp;
@@ -165,6 +173,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 					}
 					outfile.write(reinterpret_cast<char *>(&footerSig[0]), footerSig.size());
 					outfile.close();
+					curFileSize = 0;
 				} else
 					fileStartCarving = true;
 				// for (const auto &c : AhoHeader.curPos_->getPattern())
@@ -173,6 +182,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 
 				vector<unsigned char> pattern = AhoHeader.foundPattern_->getPattern();
 				string headerStr = headerComp[pattern].first;
+				curFileSize += pattern.size();
 				// debugFileMtx.lock();
 				// debugFile << headerStr << " ";
 				// debugFile << " at " << headerPos << " thread: " << threadNo << "\n";
@@ -188,19 +198,19 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 					fileType = "png";
 					fileExtension = ".png";
 				}
-				// else if (headerStr == "JPEG Header") {
-				// 	tempFileNo = jpegFileNo++;
-				// 	fileType = "jpeg";
-				// 	fileExtension = ".jpeg";
-				// } else if (headerStr == "PDF Header") {
-				// 	tempFileNo = pdfFileNo++;
-				// 	fileType = "pdf";
-				// 	fileExtension = ".pdf";
-				// } else if (headerStr == "ZIP Header") {
-				// 	tempFileNo = zipFileNo++;
-				// 	fileType = "zip";
-				// 	fileExtension = ".zip";
-				// }
+				else if (headerStr == "JPEG Header") {
+					tempFileNo = jpegFileNo++;
+					fileType = "jpeg";
+					fileExtension = ".jpeg";
+				} else if (headerStr == "PDF Header") {
+					tempFileNo = pdfFileNo++;
+					fileType = "pdf";
+					fileExtension = ".pdf";
+				} else if (headerStr == "ZIP Header") {
+					tempFileNo = zipFileNo++;
+					fileType = "zip";
+					fileExtension = ".zip";
+				}
 				// if (fileStartCarving)
 				footerSig = headerComp[pattern].second;
 
@@ -215,7 +225,8 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 			}
 			if (fileStartCarving) {
 				temp.push_back(val);
-				if (AhoFooter.inputTraversal(val)) {
+				++curFileSize;
+				if (AhoFooter.inputTraversal(val) || curFileSize > MAX_SIZE) {
 					// for (const auto &c : AhoHeader.curPos_->getPattern())
 					// debugFile << c << " ";
 					streampos headerPos = file.tellg() - streamoff(n - i);
@@ -231,6 +242,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 						outfile.close();
 						temp.clear();
 						fileStartCarving = false;
+						curFileSize = 0;
 					}
 				}
 			}
@@ -239,6 +251,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 
 		if (temp.size() != 0) {
 			outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+			curFileSize += temp.size();
 			temp.clear();
 		}
 	}
@@ -249,15 +262,15 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 			for (int i = 0; i < n; ++i) {
 				unsigned char &val = buffer[i];
 				temp.push_back(val);
-				if (AhoFooter.inputTraversal(val)) {
+				if (AhoFooter.inputTraversal(val) || curFileSize > MAX_SIZE) {
 					// for (const auto &c : AhoHeader.curPos_->getPattern())
 					// debugFile << c << " ";
 					streampos headerPos = file.tellg() - streamoff(n - i);
 					vector<unsigned char> footerPatternFound = AhoFooter.foundPattern_->getPattern();
-					debugFileMtx.lock();
-					debugFile << footerComp[footerPatternFound] << " ";
-					debugFile << " at " << headerPos << " thread: " << threadNo << "\n";
-					debugFileMtx.unlock();
+					// debugFileMtx.lock();
+					// debugFile << footerComp[footerPatternFound] << " ";
+					// debugFile << " at " << headerPos << " thread: " << threadNo << "\n";
+					// debugFileMtx.unlock();
 
 					if (footerPatternFound == footerSig) {
 						outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
@@ -265,12 +278,14 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 						outfile.close();
 						temp.clear();
 						fileStartCarving = false;
+						curFileSize = 0;
 					}
 				}
 			}
 		}
 		if (temp.size() != 0) {
 			outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+			curFileSize += temp.size();
 			temp.clear();
 		}
 	}
@@ -281,13 +296,19 @@ MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent), ui(new Ui::MainWindow) {
 	ui->setupUi(this);
 
+	timer = new QTimer(this);
+	elapsedTimer = new QElapsedTimer();
+
+	connect(timer, &QTimer::timeout, this, &MainWindow::updateTime);
+
 	connect(ui->chooseFile, &QPushButton::clicked, this, &MainWindow::chooseFileButtonClicked);
 	connect(ui->chooseOutputFolder, &QPushButton::clicked, this, &MainWindow::chooseOutputFolderButtonClicked);
 
 	connect(ui->analyseButton, &QPushButton::clicked, this, &MainWindow::goToLoadingPage);
 	connect(ui->goBackToMainPageButton, &QPushButton::clicked, this, &MainWindow::goBackToMainPage);
+	connect(ui->cancelButton, &QPushButton::clicked, this, &MainWindow::cancelProgress);
 
-
+	// connect(ui->gifCheckBox, &QCheckBox::stateChanged, this, &MainWindow::gifCheckBoxStateChanged);
 	// connect(ui->selectCategoryComboBox, &QComboBox::currentTextChanged, this, &MainWindow::categorySelect);
 
 }
@@ -314,41 +335,18 @@ void MainWindow::searchMainFun() {
 		return;
 	}
 
-			  // debugFile.open("debug.txt", ios::out);
-			  // debugFile << "Type+No\t\tOffset\t\tThread\n\n";
-
 	file.seekg(0, ios::end);
 	streampos fileSize = file.tellg();
 
 	file.close();
 
-			  // streampos splitSize = 100000000;
-
-			  // cout << (size_t)fileSize << "\n";
-
-			  // int threadNo = 20;
-			  // searchSignature(0, fileSize, threadNo);
-
-	// streampos splitSize = 100000000;	// 100 MB
-
-	// vector<std::thread> threads;
-
-	// int threadNo = 0;
-	// streampos i = 0;
-	// for (streampos i = 0; i < fileSize; i += splitSize) {
-	// 	streampos end = min(i + splitSize, fileSize);
-	// 	threads.push_back(std::thread(searchSignature, i, end, threadNo++));
-	// }
-
-	// for (auto &t : threads) {
-	// 	t.join();
-	// }
-
 	QList<QThread*> threads;
 
-	streampos splitSize = 100000000;	// 100 MB
-	// QProgressBar progressBar;
-	prevWindowPtr->ui->progressBar->setRange(0, fileSize / splitSize);
+	streampos splitSize = 50000000;
+	noOfThreads = fileSize / splitSize;
+	prevWindowPtr->ui->progressBar->setRange(0, noOfThreads);
+
+	// cerr << noOfThreads << " " << curThreadNo;
 
 	int threadNo = 0;
 	for (streampos i = 0; i < fileSize; i += splitSize) {
@@ -372,7 +370,7 @@ void MainWindow::searchMainFun() {
 	// int threadNumber = 1;
 	// for (QThread* thread : threads) {
 		// thread->wait();
-		// cerr << threadNumber++ << " completed\n";
+		// cerr << threadNumber++ << " completed\n"
 	// }
 	// cerr << "Out of this function\n";
 
@@ -384,19 +382,37 @@ void MainWindow::updateProgressBar() {
 	ui->progressBar->setValue(ui->progressBar->value() + 1);
 
 	QString displayFileNoData = QString("No of Files Carved\n"
-										"------------------\n"
-										"GIF: %1\n"
-										"PNG: %2")
+										"------------------------\n"
+										"GIF\t: %1\n"
+										"PNG\t: %2\n"
+										"JPEG\t: %3\n"
+										"PDF\t: %4\n"
+										"ZIP\t: %5\n")
 									.arg(gifFileNo - 1)
-									.arg(pngFileNo - 1);
+									.arg(pngFileNo - 1)
+									.arg(jpegFileNo - 1)
+									.arg(pdfFileNo - 1)
+									.arg(zipFileNo - 1);
 
 
 	ui->outputDiplayTextBrowser->setText(displayFileNoData);
+	QString threadText = QString("%1 threads completed execution").arg(++curThreadNo);
+	ui->outputDiplayTextBrowser->append(threadText);
+
+	if (curThreadNo == noOfThreads) {
+		ui->outputDiplayTextBrowser->append("\nFile carving completed\n");
+		timer->stop();
+
+		ui->outputDiplayTextBrowser->append(QString("Output Folder Path: %1").arg(QString::fromStdString(outputFolderPath)));
+	}
 
 	mutex.unlock();
 }
 
 void MainWindow::goToLoadingPage() {
+
+	// addSignatures();
+
 	// _02Loading *loadPage = new _02Loading();
 
 	// ui->stackedWidget->addWidget(loadPage);
@@ -404,7 +420,11 @@ void MainWindow::goToLoadingPage() {
 
 	// string categoryType = ui->selectCategoryComboBox->currentText().toStdString();
 	// string fileType = ui->categorySpecificSignatureComboBox->currentText().toStdString();
-	ui->outputDiplayTextBrowser->clear();
+	// ui->outputDiplayTextBrowser->clear();
+	clearGlobalVarsAndOutput();
+
+	elapsedTimer->start();
+	timer->start(1000); // update every second
 
 	prevWindowPtr = this;
 
@@ -420,26 +440,66 @@ void MainWindow::goToLoadingPage() {
 	connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
 	thread->start();
+}
 
-	mutex.lock();
-	QString displayFileNoData = QString("No of Files Carved\n"
-										"------------------\n"
-										"GIF: %1\n"
-										"PNG: %2")
-									.arg(gifFileNo - 1)
-									.arg(pngFileNo - 1);
+void MainWindow::updateTime() {
+		int elapsed = elapsedTimer->elapsed() / 1000; // get elapsed seconds
+		int seconds = elapsed % 60;
+		int minutes = (elapsed / 60) % 60;
+		int hours = (elapsed / 3600) % 24;
 
-	ui->outputDiplayTextBrowser->setText(displayFileNoData);
-	mutex.unlock();
-	// thread->wait();
+		QString timeText = QString("%1 : %2 : %3")
+							   .arg(hours, 2, 10, QChar('0'))
+							   .arg(minutes, 2, 10, QChar('0'))
+							   .arg(seconds, 2, 10, QChar('0'));
+
+		ui->timeLabel->setText(timeText);
 }
 
 void MainWindow::searchSignatureFirst() {
 	cerr << "Inside search signature first\n";
 }
 
+void MainWindow::clearGlobalVarsAndOutput() {
+	noOfThreads = 1;
+	curThreadNo = 0;
+
+
+	gifFileNo = 1;
+	pngFileNo = 1;
+	jpegFileNo = 1;
+	pdfFileNo = 1;
+	zipFileNo = 1;
+
+	mutex.lock();
+	QString displayFileNoData = QString("No of Files Carved\n"
+										"------------------------\n"
+										"GIF\t: 0\n"
+										"PNG\t: 0\n"
+										"JPEG\t: 0\n"
+										"PDF\t: 0\n"
+										"ZIP\t: 0\n");
+
+	ui->outputDiplayTextBrowser->setText(displayFileNoData);
+
+	QString threadText = QString("0 theads completed execution");
+	ui->outputDiplayTextBrowser->append(threadText);
+
+	mutex.unlock();
+
+}
+
 void MainWindow::goBackToMainPage() {
+	clearGlobalVarsAndOutput();
+	timer->stop();
+
 	ui->stackedWidget->setCurrentWidget(ui->MainPage);
+}
+
+void MainWindow::cancelProgress() {
+	clearGlobalVarsAndOutput();
+	timer->stop();
+
 }
 
 void MainWindow::categorySelect() {

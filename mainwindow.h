@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QMutex>
 #include <fstream>
+#include <QTimer>
+#include <QElapsedTimer>
 using namespace std;
 
 QT_BEGIN_NAMESPACE
@@ -24,6 +26,8 @@ private:
 	ifstream inputFile;
 	string inputFileContent;
 	QMutex mutex;
+	QTimer *timer;
+	QElapsedTimer *elapsedTimer;
 	// ofstream hexFile
 public slots:
 	void goToLoadingPage();
@@ -36,6 +40,10 @@ public slots:
 	void searchMainFun();
 	void updateProgressBar();
 	void displayCompletedMsg();
+	void updateTime();
+	void cancelProgress();
+	void clearGlobalVarsAndOutput();
+	// void addSignatures();
 	// int searchSignature(string, string, string);
 };
 #endif	  // MAINWINDOW_H
