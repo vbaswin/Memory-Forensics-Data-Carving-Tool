@@ -153,10 +153,13 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 	size_t curFileSize = 0;
 
 	bool fileStartCarving = false;
-	vector<unsigned char> footerSig, temp;
+	int startBuffer = 0, endBuffer = n;
+	vector<unsigned char> footerSig;
 	for (streampos cur = start; file.read(reinterpret_cast<char *>(buffer), n) && cur <= end; cur += n) {
-		temp.clear();
-		for (int i = 0; i < n; ++i) {
+		// temp.clear();
+		startBuffer = 0;
+		int i;
+		for (i = 0; i < n; ++i) {
 			unsigned char &val = buffer[i];
 			// cout << val << " ";
 			// if (i == (n - 1)) {
@@ -167,13 +170,17 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 			// } else {
 			if (AhoHeader.inputTraversal(val)) {
 				if (fileStartCarving) {
-					if (temp.size() != 0) {
-						outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
-						temp.clear();
-					}
+					// if (temp.size() != 0) {
+					// 	outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+					// 	temp.clear();
+					// }
+					endBuffer = i;
+					outfile.write(reinterpret_cast<char*>(buffer + startBuffer), endBuffer - startBuffer);
 					outfile.write(reinterpret_cast<char *>(&footerSig[0]), footerSig.size());
 					outfile.close();
 					curFileSize = 0;
+					startBuffer = i + 1;
+					endBuffer = n;
 				} else
 					fileStartCarving = true;
 				// for (const auto &c : AhoHeader.curPos_->getPattern())
@@ -224,7 +231,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 				outfile.write(reinterpret_cast<char *>(&pattern[0]), pattern.size());
 			}
 			if (fileStartCarving) {
-				temp.push_back(val);
+				// temp.push_back(val);
 				++curFileSize;
 				if (AhoFooter.inputTraversal(val) || curFileSize > MAX_SIZE) {
 					// for (const auto &c : AhoHeader.curPos_->getPattern())
@@ -237,10 +244,15 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 					// debugFileMtx.unlock();
 
 					if (footerPatternFound == footerSig) {
-						outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+						// outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+						// outfile.write((char *)buffer, i);
+						endBuffer = i;
+						outfile.write(reinterpret_cast<char*>(buffer + startBuffer), endBuffer - startBuffer);
 
+						startBuffer = i + 1;
+						endBuffer = n;
 						outfile.close();
-						temp.clear();
+						// temp.clear();
 						fileStartCarving = false;
 						curFileSize = 0;
 					}
@@ -249,19 +261,28 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 			// AhoFooter.inputTraversal(val);
 		}
 
-		if (temp.size() != 0) {
-			outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
-			curFileSize += temp.size();
-			temp.clear();
+		// if (temp.size() != 0) {
+		// 	outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+		// 	curFileSize += temp.size();
+		// 	temp.clear();
+		// }
+		if (startBuffer < i) {
+			endBuffer = i;
+			outfile.write(reinterpret_cast<char*>(buffer + startBuffer), endBuffer - startBuffer);
+			curFileSize += (endBuffer - startBuffer);
+			endBuffer = n;
 		}
 	}
 
-	temp.clear();
+	// temp.clear();
+
 	while (fileStartCarving) {
+		startBuffer = 0;
+		int i;
 		if (file.read(reinterpret_cast<char *>(buffer), n)) {
-			for (int i = 0; i < n; ++i) {
+			for (i = 0; i < n; ++i) {
 				unsigned char &val = buffer[i];
-				temp.push_back(val);
+				// temp.push_back(val);
 				if (AhoFooter.inputTraversal(val) || curFileSize > MAX_SIZE) {
 					// for (const auto &c : AhoHeader.curPos_->getPattern())
 					// debugFile << c << " ";
@@ -273,20 +294,30 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 					// debugFileMtx.unlock();
 
 					if (footerPatternFound == footerSig) {
-						outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+						// outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+						endBuffer = i;
+						outfile.write(reinterpret_cast<char*>(buffer + startBuffer), endBuffer - startBuffer);
 
 						outfile.close();
-						temp.clear();
+						// temp.clear();
 						fileStartCarving = false;
 						curFileSize = 0;
+						startBuffer = i+1;
+						endBuffer = n;
 					}
 				}
 			}
 		}
-		if (temp.size() != 0) {
-			outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
-			curFileSize += temp.size();
-			temp.clear();
+		// if (temp.size() != 0) {
+		// 	outfile.write(reinterpret_cast<char *>(&temp[0]), temp.size());
+		// 	curFileSize += temp.size();
+		// 	temp.clear();
+		// }
+		if (startBuffer < i) {
+			endBuffer = i;
+			outfile.write(reinterpret_cast<char*>(buffer + startBuffer), endBuffer - startBuffer);
+			curFileSize += (endBuffer - startBuffer);
+			endBuffer = n;
 		}
 	}
 }
@@ -342,7 +373,7 @@ void MainWindow::searchMainFun() {
 
 	QList<QThread*> threads;
 
-	streampos splitSize = 50000000;
+	streampos splitSize = 100000000;
 	noOfThreads = fileSize / splitSize;
 	prevWindowPtr->ui->progressBar->setRange(0, noOfThreads);
 
