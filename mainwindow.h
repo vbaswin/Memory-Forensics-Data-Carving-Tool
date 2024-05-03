@@ -43,6 +43,7 @@ public slots:
 	void updateTime();
 	void cancelProgress();
 	void clearGlobalVarsAndOutput();
+	void changeWidget();
 	// void addSignatures();
 	// int searchSignature(string, string, string);
 };

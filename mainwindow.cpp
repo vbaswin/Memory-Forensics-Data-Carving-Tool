@@ -20,7 +20,7 @@
 #include "AhoCorasick.h"
 #include "Node.h"
 #include <QMutex>
-#include <Qtimer>
+#include <QTimer>
 #include "vectorHash.h"
 #include "worker.h"
 #include "sectionWorker.h"
@@ -29,7 +29,6 @@ using namespace std;
 void searchMainFun();
 const int MAX_SIZE = 500000000;
 int noOfThreads = 1;
-int curThreadNo = 0;
 
 mutex debugFileMtx, outputFileMtx;
 // gifFileMtx, pngFileMtx;
@@ -39,6 +38,7 @@ std::atomic<int> pngFileNo(1);
 std::atomic<int> jpegFileNo(1);
 std::atomic<int> pdfFileNo(1);
 std::atomic<int> zipFileNo(1);
+std::atomic<int> curThreadNo(0);
 
 string outputFolderPath = "";
 
@@ -131,11 +131,11 @@ AhoCorasick AhoHeaderFirst(headerSigs), AhoFooterFirst(footerSigs);
 // ofstream debugFile;
 string inputFilePath = "";
 
-void searchSignature(streampos start, streampos end, int threadNo) {
+void searchSignature(ifstream& file, streampos start, streampos end, int threadNo) {
 	int tempFileNo = -1;
 	AhoCorasick AhoHeader(AhoHeaderFirst), AhoFooter(AhoFooterFirst);
 
-	ifstream file(inputFilePath, ios::binary);
+	// ifstream file(inputFilePath, ios::binary);
 
 	if (!file) {
 		cerr << "Thread " << threadNo << " could not open file\n";
@@ -144,7 +144,7 @@ void searchSignature(streampos start, streampos end, int threadNo) {
 
 	file.seekg(start, ios::beg);
 
-	int n = 100000;
+	int n = 20;
 	unsigned char buffer[n];
 
 	string filePath, fileType, fileExtension;
@@ -307,11 +307,34 @@ MainWindow::MainWindow(QWidget *parent)
 
 	connect(ui->analyseButton, &QPushButton::clicked, this, &MainWindow::goToLoadingPage);
 	connect(ui->goBackToMainPageButton, &QPushButton::clicked, this, &MainWindow::goBackToMainPage);
-	connect(ui->cancelButton, &QPushButton::clicked, this, &MainWindow::cancelProgress);
+	// connect(ui->cancelButton, &QPushButton::clicked, this, &MainWindow::cancelProgress);
 
 	// connect(ui->gifCheckBox, &QCheckBox::stateChanged, this, &MainWindow::gifCheckBoxStateChanged);
 	// connect(ui->selectCategoryComboBox, &QComboBox::currentTextChanged, this, &MainWindow::categorySelect);
 
+	// ui->iconLabel->setPixmap(QPixmap(":/icons/cdac_image.jpeg"));
+	double scaleFactor = 1;  // 50% of the original size
+
+	QPixmap pixmap(":/icons/CDAC.svg");
+	int newWidth = pixmap.width() * scaleFactor;
+	int newHeight = pixmap.height() * scaleFactor;
+
+	QPixmap scaledPixmap = pixmap.scaled(newWidth, newHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+	ui->iconLabel->setPixmap(scaledPixmap);
+
+	// QTimer::singleShot(2000, this {
+	// 		ui->stackedWidget->setCurrentWidget(ui->MainPage);
+	// 	});
+
+	QTimer::singleShot(2000, this, SLOT(changeWidget()));
+
+
+	// ui->iconLabel->setText("hello");
+}
+
+void MainWindow::changeWidget() {
+	ui->stackedWidget->setCurrentWidget(ui->MainPage);
 }
 
 MainWindow::~MainWindow() {
@@ -319,6 +342,8 @@ MainWindow::~MainWindow() {
 }
 
 MainWindow *prevWindowPtr;
+
+QList<QThread*> threads;
 
 void MainWindow::searchMainFun() {
 
@@ -341,7 +366,6 @@ void MainWindow::searchMainFun() {
 
 	file.close();
 
-	QList<QThread*> threads;
 
 	streampos splitSize = 100000000;
 	noOfThreads = fileSize / splitSize;
@@ -355,6 +379,7 @@ void MainWindow::searchMainFun() {
 
 		QThread* thread = new QThread;
 		sectionWorker* sectionWorker = new class sectionWorker(i, end, threadNo++);
+		sectionWorker->file.open(inputFilePath, std::ios::binary);
 
 		sectionWorker->moveToThread(thread);
 		connect(thread, &QThread::started, sectionWorker, &sectionWorker::doWork);
@@ -400,11 +425,12 @@ void MainWindow::updateProgressBar() {
 	QString threadText = QString("%1 threads completed execution").arg(++curThreadNo);
 	ui->outputDiplayTextBrowser->append(threadText);
 
-	if (curThreadNo == noOfThreads) {
+	if (curThreadNo == noOfThreads + 1) {
 		ui->outputDiplayTextBrowser->append("\nFile carving completed\n");
 		timer->stop();
 
 		ui->outputDiplayTextBrowser->append(QString("Output Folder Path: %1").arg(QString::fromStdString(outputFolderPath)));
+		ui->goBackToMainPageButton->setEnabled(true);
 	}
 
 	mutex.unlock();
@@ -412,12 +438,14 @@ void MainWindow::updateProgressBar() {
 
 void MainWindow::goToLoadingPage() {
 
+
 	// addSignatures();
 
 	// _02Loading *loadPage = new _02Loading();
 
 	// ui->stackedWidget->addWidget(loadPage);
 	ui->stackedWidget->setCurrentWidget(ui->LoadPage);
+	ui->goBackToMainPageButton->setEnabled(false);
 
 	// string categoryType = ui->selectCategoryComboBox->currentText().toStdString();
 	// string fileType = ui->categorySpecificSignatureComboBox->currentText().toStdString();
@@ -462,6 +490,14 @@ void MainWindow::searchSignatureFirst() {
 }
 
 void MainWindow::clearGlobalVarsAndOutput() {
+	ui->progressBar->setValue(1);
+	for (QThread* thread : threads) {
+		thread->terminate();
+		// thread->wait();
+	}
+	timer->stop();
+
+
 	noOfThreads = 1;
 	curThreadNo = 0;
 
@@ -492,8 +528,6 @@ void MainWindow::clearGlobalVarsAndOutput() {
 
 void MainWindow::goBackToMainPage() {
 	clearGlobalVarsAndOutput();
-	timer->stop();
-
 	ui->stackedWidget->setCurrentWidget(ui->MainPage);
 }
 
